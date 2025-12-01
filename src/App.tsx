@@ -31,6 +31,15 @@ import PaymentDemo from "./pages/PaymentDemo";
 import PrivacyPolicy from "./pages/legal/PrivacyPolicy";
 import Terms from "./pages/legal/Terms";
 import Refund from "./pages/legal/Refund";
+import SLA from "./pages/legal/SLA";
+
+// Service Pages
+import Websites from "./pages/services/Websites";
+import Portfolios from "./pages/services/Portfolios";
+import BillingSystems from "./pages/services/BillingSystems";
+import Dashboards from "./pages/services/Dashboards";
+import Troubleshooting from "./pages/services/Troubleshooting";
+import Maintenance from "./pages/services/Maintenance";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +54,12 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/services" element={<Services />} />
           <Route path="/services/:slug" element={<ServiceDetail />} />
+          <Route path="/services/websites" element={<Websites />} />
+          <Route path="/services/portfolios" element={<Portfolios />} />
+          <Route path="/services/billing-systems" element={<BillingSystems />} />
+          <Route path="/services/dashboards" element={<Dashboards />} />
+          <Route path="/services/troubleshooting" element={<Troubleshooting />} />
+          <Route path="/services/maintenance" element={<Maintenance />} />
           <Route path="/portfolio" element={<Portfolio />} />
           <Route path="/case-studies" element={<CaseStudies />} />
           <Route path="/case-studies/:slug" element={<CaseStudyDetail />} />
@@ -75,6 +90,7 @@ const App = () => (
           <Route path="/legal/privacy" element={<PrivacyPolicy />} />
           <Route path="/legal/terms" element={<Terms />} />
           <Route path="/legal/refund" element={<Refund />} />
+          <Route path="/legal/sla" element={<SLA />} />
           
           {/* 404 */}
           <Route path="*" element={<NotFound />} />
