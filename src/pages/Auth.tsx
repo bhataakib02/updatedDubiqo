@@ -27,6 +27,7 @@ export default function Auth() {
   useEffect(() => {
     // Check if user is already logged in
     const checkUser = async () => {
+      if (!supabase) return;
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         navigate("/client-portal");
@@ -35,6 +36,7 @@ export default function Auth() {
     checkUser();
 
     // Listen for auth changes
+    if (!supabase) return;
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
         navigate("/client-portal");
@@ -46,6 +48,14 @@ export default function Auth() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!supabase) {
+      toast.error("Authentication not configured", {
+        description: "Please set up Supabase to enable authentication."
+      });
+      return;
+    }
+    
     setIsLoading(true);
 
     try {
@@ -72,6 +82,14 @@ export default function Auth() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!supabase) {
+      toast.error("Authentication not configured", {
+        description: "Please set up Supabase to enable authentication."
+      });
+      return;
+    }
+    
     setIsLoading(true);
 
     try {
@@ -107,6 +125,13 @@ export default function Auth() {
   };
 
   const handleOAuthLogin = async (provider: "google" | "github") => {
+    if (!supabase) {
+      toast.error("Authentication not configured", {
+        description: "Please set up Supabase to enable authentication."
+      });
+      return;
+    }
+    
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.signInWithOAuth({
