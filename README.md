@@ -1,73 +1,136 @@
-# Welcome to your Lovable project
+# Dubiqo Website - Merged Project
 
-## Project info
+This is the unified Dubiqo website combining features from both repositories.
 
-**URL**: https://lovable.dev/projects/6f7dcf67-bf77-4bfd-85dc-b513c3e5b6ab
+## What's Included
 
-## How can I edit this code?
+### Core Features
+- ✅ Modern React + TypeScript + Vite setup
+- ✅ Tailwind CSS with custom design system
+- ✅ Shadcn UI components
+- ✅ React Router for navigation
+- ✅ Responsive design throughout
 
-There are several ways of editing your application.
+### Pages
+- Home / Landing page
+- Services (with detailed service pages for Websites, Portfolios, Dashboards, Billing Systems, Troubleshooting, Maintenance)
+- Portfolio & Case Studies
+- Pricing
+- About
+- Blog
+- Contact & Quote forms
+- Booking system
+- Support center
+- FAQ
+- Careers
+- Client Portal (with authentication)
+- Legal pages (Privacy, Terms, Refund, SLA)
 
-**Use Lovable**
+### Integrations
+- **Supabase** - Optional backend for authentication and database
+- **EmailJS** - Email service for contact forms
+- **ChatWidget** - Interactive support bot
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/6f7dcf67-bf77-4bfd-85dc-b513c3e5b6ab) and start prompting.
+## Getting Started
 
-Changes made via Lovable will be committed automatically to this repo.
+1. **Install dependencies:**
+   ```bash
+   npm install
+   ```
 
-**Use your preferred IDE**
+2. **Set up environment variables:**
+   - Copy `.env.example` to `.env`
+   - Add your Supabase credentials (optional, for auth features)
+   - Add your EmailJS credentials (optional, for contact forms)
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+3. **Run development server:**
+   ```bash
+   npm run dev
+   ```
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Project Structure
 
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```
+src/
+├── components/
+│   ├── layout/         # Layout components (Navbar, Footer, Layout)
+│   ├── ui/             # Shadcn UI components
+│   └── ChatWidget.tsx  # Support chat widget
+├── pages/
+│   ├── services/       # Service detail pages
+│   ├── legal/          # Legal pages
+│   └── ...             # Other pages
+├── integrations/
+│   └── supabase/       # Supabase client & types
+├── utils/
+│   └── emailService.ts # EmailJS integration
+└── hooks/              # Custom React hooks
 ```
 
-**Edit a file directly in GitHub**
+## Key Features
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Design System
+- Custom color palette with primary (purple) and secondary (neon blue) colors
+- Glassmorphism effects
+- Gradient utilities
+- Responsive grid patterns
+- Dark theme by default
 
-**Use GitHub Codespaces**
+### Authentication (Optional)
+- Login/Signup with email
+- OAuth (Google, GitHub) support
+- Protected client portal
+- Session management
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Note: Authentication requires Supabase setup. The app works fine without it.
 
-## What technologies are used for this project?
+### Contact Forms
+- EmailJS integration for sending emails
+- Support request forms
+- Quote calculator
+- Contact page
 
-This project is built with:
+Note: Email features require EmailJS setup. Forms will show an error without configuration.
 
-- Vite
+## Deployment
+
+Build for production:
+```bash
+npm run build
+```
+
+Preview production build:
+```bash
+npm run preview
+```
+
+## Environment Variables
+
+```env
+# Supabase (Optional - for authentication)
+VITE_SUPABASE_URL=your-supabase-url
+VITE_SUPABASE_PUBLISHABLE_KEY=your-supabase-key
+
+# EmailJS (Optional - for contact forms)
+VITE_EMAILJS_SERVICE_ID=your-service-id
+VITE_EMAILJS_TEMPLATE_ID_SUPPORT=your-support-template
+VITE_EMAILJS_TEMPLATE_ID_CONTACT=your-contact-template
+VITE_EMAILJS_TEMPLATE_ID_QUOTE=your-quote-template
+VITE_EMAILJS_PUBLIC_KEY=your-public-key
+```
+
+## Technologies Used
+
+- React 18
 - TypeScript
-- React
-- shadcn-ui
+- Vite
 - Tailwind CSS
+- Shadcn UI
+- React Router
+- Supabase
+- EmailJS
+- Lucide Icons
 
-## How can I deploy this project?
+## License
 
-Simply open [Lovable](https://lovable.dev/projects/6f7dcf67-bf77-4bfd-85dc-b513c3e5b6ab) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Private project for Dubiqo.

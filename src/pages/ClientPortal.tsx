@@ -30,6 +30,12 @@ export default function ClientPortal() {
 
   useEffect(() => {
     const checkAuth = async () => {
+      if (!supabase) {
+        toast.error("Authentication not configured");
+        navigate("/");
+        return;
+      }
+      
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         navigate("/auth");
@@ -41,6 +47,8 @@ export default function ClientPortal() {
 
     checkAuth();
 
+    if (!supabase) return;
+    
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!session) {
         navigate("/auth");
@@ -53,6 +61,7 @@ export default function ClientPortal() {
   }, [navigate]);
 
   const handleLogout = async () => {
+    if (!supabase) return;
     await supabase.auth.signOut();
     toast.success("Logged out successfully");
     navigate("/");
