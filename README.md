@@ -47,26 +47,6 @@ This is the unified Dubiqo website combining features from both repositories.
    ```bash
    npm run dev
    ```
-
-## Project Structure
-
-```
-src/
-├── components/
-│   ├── layout/         # Layout components (Navbar, Footer, Layout)
-│   ├── ui/             # Shadcn UI components
-│   └── ChatWidget.tsx  # Support chat widget
-├── pages/
-│   ├── services/       # Service detail pages
-│   ├── legal/          # Legal pages
-│   └── ...             # Other pages
-├── integrations/
-│   └── supabase/       # Supabase client & types
-├── utils/
-│   └── emailService.ts # EmailJS integration
-└── hooks/              # Custom React hooks
-```
-
 ## Key Features
 
 ### Design System
