@@ -1,9 +1,3 @@
-Below is a complete **README.md** you can drop into the repo root. It documents the project structure, setup, scripts, admin-hidden rules, env variables, migrations, Edge Functions, testing, CI, and acceptance criteria — all matching the monorepo layout we finalized.
-
-Copy–paste the whole file into `README.md`.
-
----
-
 # Dubiqo — Monorepo (React + Vite + Tailwind + Supabase)
 
 **Dubiqo Digital Solutions** — *We build websites that build your business.*
@@ -35,8 +29,8 @@ Stack: **React + Vite + TypeScript + Tailwind** (frontend) and **Supabase / Lova
 ---
 
 ## Project structure
-
-/dubiqo/                          # repo root
+```txt
+dubiqo/
 ├─ .github/
 │  ├─ workflows/
 │  │  ├─ ci.yml
@@ -51,13 +45,13 @@ Stack: **React + Vite + TypeScript + Tailwind** (frontend) and **Supabase / Lova
 │  │  ├─ tailwind.config.js
 │  │  ├─ postcss.config.cjs
 │  │  ├─ public/
-│  │  │  ├─ robots.txt           # include "Disallow: /admin"
+│  │  │  ├─ robots.txt            # include "Disallow: /admin"
 │  │  │  └─ favicon.ico
 │  │  ├─ src/
 │  │  │  ├─ main.tsx
 │  │  │  ├─ app/
-│  │  │  │  ├─ routes/           # React Router routes
-│  │  │  │  │  ├─ index.tsx      # "/"
+│  │  │  │  ├─ routes/            # React Router pages
+│  │  │  │  │  ├─ index.tsx
 │  │  │  │  │  ├─ services/
 │  │  │  │  │  ├─ portfolio/
 │  │  │  │  │  ├─ case-studies/
@@ -70,74 +64,55 @@ Stack: **React + Vite + TypeScript + Tailwind** (frontend) and **Supabase / Lova
 │  │  │  │  │  ├─ downloads/
 │  │  │  │  │  ├─ support/
 │  │  │  │  │  ├─ faq/
-│  │  │  │  │  ├─ contact/
-│  │  │  │  │  └─ client-portal/ # mounted under /client-portal (auth-protected)
-│  │  │  │  └─ admin/            # HIDDEN admin routes; not linked from public site
-│  │  │  │     ├─ dashboard/
-│  │  │  │     ├─ users/
-│  │  │  │     ├─ invoices/
-│  │  │  │     └─ audits/
-│  │  │  ├─ components/          # shared UI components (using packages/ui too)
+│  │  │  │  │  └─ contact/
+│  │  │  │  └─ admin/             # HIDDEN admin routes; never linked publicly
+│  │  │ │     ├─ dashboard/
+│  │  │ │     ├─ users/
+│  │  │ │     ├─ invoices/
+│  │  │ │     └─ audits/
+│  │  │  ├─ components/
 │  │  │  ├─ hooks/
-│  │  │  ├─ lib/                 # supabase client wrapper, auth helpers, utils
+│  │  │  ├─ lib/                  # supabase client wrapper, auth helpers
 │  │  │  ├─ styles/
 │  │  │  └─ assets/
 │  │  └─ index.html
-│  └─ admin-console/             # optional separate admin app (if chosen)
-│     ├─ package.json
-│     └─ src/ ...
-├─ packages/
-│  ├─ ui/                        # shared UI primitives + Tailwind + Storybook stories
-│  │  ├─ package.json
-│  │  ├─ src/
-│  │  │  ├─ Button/
-│  │  │  ├─ Card/
-│  │  │  ├─ Modal/
-│  │  │  └─ index.ts
-│  │  └─ .storybook/
-│  ├─ types/                     # shared TS types
-│  │  └─ index.ts
-│  └─ sdk/                       # generated OpenAPI client & helpers
+│  └─ admin-console/              # optional separate admin app
 │     ├─ package.json
 │     └─ src/
+├─ packages/
+│  ├─ ui/                         # shared components + Storybook
+│  ├─ types/                      # shared types
+│  └─ sdk/                        # generated API client
 ├─ supabase/
-│  ├─ migrations/                 # SQL migration files (timestamped)
-│  │  ├─ 001_init.sql
-│  │  ├─ 002_add_quotes.sql
-│  │  └─ ...
+│  ├─ migrations/                 # SQL schema migrations
 │  ├─ seeds/
 │  │  └─ seed.sql
 │  ├─ policies/
 │  │  └─ rls_policies.sql
-│  ├─ functions/                  # Edge Functions source (ts)
-│  │  ├─ quote-create/
-│  │  │  ├─ index.ts
-│  │  │  └─ schema.zod.ts
-│  │  ├─ bookings-create/
-│  │  ├─ create-checkout-session/
-│  │  ├─ webhooks-stripe/
-│  │  ├─ telemetry-ingest/
-│  │  ├─ ai-insights/
-│  │  └─ ticket-create/
-│  └─ storage/                    # initial bucket config JSON (optional)
+│  └─ functions/                  # Edge Functions
+│     ├─ quote-create/
+│     ├─ bookings-create/
+│     ├─ create-checkout-session/
+│     ├─ webhooks-stripe/
+│     ├─ telemetry-ingest/
+│     ├─ ai-insights/
+│     └─ ticket-create/
 ├─ infra/
-│  ├─ terraform/                  # optional terraform examples
-│  └─ docs/hosting.md
+│  └─ terraform/                  # optional infra examples
 ├─ tests/
 │  ├─ unit/
 │  │  └─ quote.spec.ts
 │  └─ e2e/
 │     └─ playwright.config.ts
-├─ .env.example
 ├─ docker-compose.yml
-├─ package.json                    # workspace-level (turborepo or pnpm workspace)
-├─ pnpm-workspace.yaml / turbo.json
+├─ pnpm-workspace.yaml
+├─ package.json
 ├─ tsconfig.base.json
+├─ .env.example
 ├─ .eslintrc.cjs
 ├─ .prettierrc
-├─ README.md
-└─ LICENSE
-
+└─ README.md
+```
 
 ---
 
