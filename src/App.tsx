@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 // Pages
 import Index from "./pages/Index";
@@ -19,8 +20,6 @@ import BlogPost from "./pages/BlogPost";
 import Contact from "./pages/Contact";
 import Quote from "./pages/Quote";
 import Booking from "./pages/Booking";
-import Careers from "./pages/Careers";
-import CareerDetail from "./pages/CareerDetail";
 import Downloads from "./pages/Downloads";
 import FAQ from "./pages/FAQ";
 import Support from "./pages/Support";
@@ -40,6 +39,11 @@ import BillingSystems from "./pages/services/BillingSystems";
 import Dashboards from "./pages/services/Dashboards";
 import Troubleshooting from "./pages/services/Troubleshooting";
 import Maintenance from "./pages/services/Maintenance";
+
+// Admin Pages (Hidden - No public links)
+import AdminDashboard from "./pages/admin/Dashboard";
+import AdminUsers from "./pages/admin/Users";
+import AdminProjects from "./pages/admin/Projects";
 
 const queryClient = new QueryClient();
 
@@ -71,16 +75,55 @@ const App = () => (
           <Route path="/faq" element={<FAQ />} />
           <Route path="/support" element={<Support />} />
           <Route path="/downloads" element={<Downloads />} />
-          <Route path="/careers" element={<Careers />} />
-          <Route path="/careers/:slug" element={<CareerDetail />} />
           
           {/* Interactive Flows */}
           <Route path="/quote" element={<Quote />} />
           <Route path="/booking" element={<Booking />} />
           
-          {/* Auth & Portal */}
+          {/* Auth & Portals */}
           <Route path="/auth" element={<Auth />} />
-          <Route path="/client-portal" element={<ClientPortal />} />
+          <Route path="/client-portal" element={
+            <ProtectedRoute>
+              <ClientPortal />
+            </ProtectedRoute>
+          } />
+          
+          {/* Hidden Admin Portal - No public links, robots.txt blocked */}
+          <Route path="/admin/dashboard" element={
+            <ProtectedRoute requiredRole={['admin', 'staff']}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/users" element={
+            <ProtectedRoute requiredRole={['admin', 'staff']}>
+              <AdminUsers />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/projects" element={
+            <ProtectedRoute requiredRole={['admin', 'staff']}>
+              <AdminProjects />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/quotes" element={
+            <ProtectedRoute requiredRole={['admin', 'staff']}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/bookings" element={
+            <ProtectedRoute requiredRole={['admin', 'staff']}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/invoices" element={
+            <ProtectedRoute requiredRole={['admin', 'staff']}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/tickets" element={
+            <ProtectedRoute requiredRole={['admin', 'staff']}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          } />
           
           {/* Demo Pages */}
           <Route path="/analytics-demo" element={<AnalyticsDemo />} />

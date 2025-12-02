@@ -1,116 +1,276 @@
-# Dubiqo Website - Merged Project
+# Dubiqo Digital Solutions - Enterprise Platform
 
-This is the unified Dubiqo website combining features from both repositories.
+**Tagline:** "We build websites that build your business."
 
-## What's Included
+Complete, production-ready, enterprise-grade platform built with React + Vite + TypeScript + Tailwind CSS + Lovable Cloud (Supabase).
 
-### Core Features
-- ✅ Modern React + TypeScript + Vite setup
+## 🚀 Features
+
+### Frontend
+- ✅ Modern React 18 + Vite + TypeScript
 - ✅ Tailwind CSS with custom design system
 - ✅ Shadcn UI components
-- ✅ React Router for navigation
 - ✅ Responsive design throughout
+- ✅ SEO optimized
+- ✅ PWA support ready
 
-### Pages
-- Home / Landing page
-- Services (with detailed service pages for Websites, Portfolios, Dashboards, Billing Systems, Troubleshooting, Maintenance)
+### Backend (Lovable Cloud)
+- ✅ Authentication (Email/Password, OAuth - Google/GitHub)
+- ✅ PostgreSQL database with RLS policies
+- ✅ File storage
+- ✅ Edge Functions (serverless)
+- ✅ Real-time subscriptions
+- ✅ Role-Based Access Control (RBAC)
+
+### Public Pages
+- Home / Landing
+- Services (Websites, Portfolios, Billing Systems, Dashboards, Troubleshooting, Maintenance)
 - Portfolio & Case Studies
 - Pricing
 - About
 - Blog
-- Contact & Quote forms
-- Booking system
-- Support center
+- Contact & Support
 - FAQ
-- Careers
-- Client Portal (with authentication)
-- Legal pages (Privacy, Terms, Refund, SLA)
+- Quote Calculator
+- Booking System
+- Downloads
+- Legal (Privacy, Terms, Refund, SLA)
 
-### Integrations
-- **Supabase** - Optional backend for authentication and database
-- **EmailJS** - Email service for contact forms
-- **ChatWidget** - Interactive support bot
+### Authentication System
+- Unified login (no role selection)
+- Auto-redirect based on user role:
+  - `admin`/`staff` → `/admin/dashboard`
+  - `client` → `/client-portal`
+- OAuth support (Google, GitHub)
+- Email auto-confirm enabled for development
 
-## Getting Started
+### Hidden Admin Portal
+**Path:** `/admin/*` (NO public links anywhere)
+- Blocked in robots.txt
+- Protected by RLS policies
+- Requires admin/staff role
+- Features:
+  - Dashboard with statistics
+  - User management
+  - Project management
+  - Quote management
+  - Booking management
+  - Invoice management
+  - Ticket system
+  - Audit logs
+  - Analytics
 
-1. **Install dependencies:**
-   ```bash
-   npm install
-   ```
+### Database Schema
+Comprehensive schema with:
+- `profiles` - User profiles
+- `user_roles` - RBAC (admin, staff, client)
+- `projects` - Client projects
+- `quotes` - Quote requests
+- `bookings` - Consultation bookings
+- `invoices` & `payments` - Billing
+- `tickets` & `ticket_messages` - Support system
+- `blog_posts` - Content management
+- `case_studies` - Portfolio
+- `downloads` - File management
+- `audit_logs` - Security tracking
+- `telemetry_events` - Analytics
+- `feature_flags` - Feature toggles
+- `consent_logs` - GDPR compliance
 
-2. **Set up environment variables:**
-   - Copy `.env.example` to `.env`
-   - Add your Supabase credentials (optional, for auth features)
-   - Add your EmailJS credentials (optional, for contact forms)
+## 🛠️ Getting Started
 
-3. **Run development server:**
-   ```bash
-   npm run dev
-   ```
-## Key Features
+### Prerequisites
+- Node.js 18+
+- npm or yarn
 
-### Design System
-- Custom color palette with primary (purple) and secondary (neon blue) colors
-- Glassmorphism effects
-- Gradient utilities
-- Responsive grid patterns
-- Dark theme by default
+### Installation
 
-### Authentication (Optional)
-- Login/Signup with email
-- OAuth (Google, GitHub) support
-- Protected client portal
-- Session management
-
-Note: Authentication requires Supabase setup. The app works fine without it.
-
-### Contact Forms
-- EmailJS integration for sending emails
-- Support request forms
-- Quote calculator
-- Contact page
-
-Note: Email features require EmailJS setup. Forms will show an error without configuration.
-
-## Deployment
-
-Build for production:
 ```bash
-npm run build
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
 ```
 
-Preview production build:
+### Environment Setup
+Lovable Cloud automatically provides:
+- `VITE_SUPABASE_URL` - Backend URL
+- `VITE_SUPABASE_PUBLISHABLE_KEY` - Public API key
+- `VITE_SUPABASE_PROJECT_ID` - Project identifier
+
+No manual .env configuration needed for backend!
+
+### First Run
+1. The app will run on `http://localhost:5173`
+2. Sign up to create your first account (becomes a client by default)
+3. To create an admin user, manually update the `user_roles` table in Lovable Cloud
+
+## 🔐 Security
+
+### Authentication
+- Email/password with secure hashing
+- OAuth providers (Google, GitHub)
+- Session management with Lovable Cloud
+- Auto-redirect based on role
+
+### Authorization (RLS)
+- Row Level Security on all tables
+- Role-based policies (admin, staff, client)
+- Clients can only see their own data
+- Staff/Admin have appropriate elevated access
+- Public content (blog, case studies) accessible to all when published
+
+### Admin Access
+- Hidden admin portal (no public links)
+- Blocked from search engines (robots.txt)
+- Protected routes with role checking
+- Audit logging for all admin actions
+
+## 📁 Project Structure
+
+```
+src/
+├── components/
+│   ├── layout/              # Layout components
+│   ├── ui/                  # Shadcn UI components
+│   ├── ChatWidget.tsx       # Support chat
+│   └── ProtectedRoute.tsx   # Auth wrapper
+├── pages/
+│   ├── admin/               # Hidden admin portal
+│   ├── services/            # Service pages
+│   ├── legal/               # Legal pages
+│   └── ...                  # Public pages
+├── integrations/
+│   └── supabase/            # Lovable Cloud client
+├── utils/
+│   └── emailService.ts      # EmailJS integration
+└── hooks/                   # Custom React hooks
+```
+
+## 🔧 Key Technologies
+
+- **Frontend:** React 18, TypeScript, Vite, Tailwind CSS
+- **UI:** Shadcn UI, Lucide Icons
+- **Routing:** React Router v6
+- **Backend:** Lovable Cloud (Supabase)
+- **Auth:** Lovable Cloud Auth
+- **Database:** PostgreSQL with RLS
+- **Storage:** Lovable Cloud Storage
+- **Functions:** Edge Functions (TypeScript)
+- **Email:** EmailJS (optional integration)
+
+## 🚢 Deployment
+
+### Frontend
 ```bash
+# Build for production
+npm run build
+
+# Preview production build
 npm run preview
 ```
 
-## Environment Variables
+Deploy to:
+- Vercel (recommended)
+- Netlify
+- Any static hosting
 
-```env
-# Supabase (Optional - for authentication)
-VITE_SUPABASE_URL=your-supabase-url
-VITE_SUPABASE_PUBLISHABLE_KEY=your-supabase-key
+### Backend
+Lovable Cloud automatically deploys:
+- Database migrations
+- Edge Functions
+- Storage buckets
+- RLS policies
 
-# EmailJS (Optional - for contact forms)
-VITE_EMAILJS_SERVICE_ID=your-service-id
-VITE_EMAILJS_TEMPLATE_ID_SUPPORT=your-support-template
-VITE_EMAILJS_TEMPLATE_ID_CONTACT=your-contact-template
-VITE_EMAILJS_TEMPLATE_ID_QUOTE=your-quote-template
-VITE_EMAILJS_PUBLIC_KEY=your-public-key
-```
+## 📊 Admin Features
 
-## Technologies Used
+### Dashboard
+- User statistics
+- Project overview
+- Quote requests
+- Booking calendar
+- Invoice tracking
+- Ticket status
+- Real-time updates
 
-- React 18
-- TypeScript
-- Vite
-- Tailwind CSS
-- Shadcn UI
-- React Router
-- Supabase
-- EmailJS
-- Lucide Icons
+### User Management
+- View all users
+- Manage roles
+- Activity tracking
+- Profile management
 
-## License
+### Project Management
+- All client projects
+- Status tracking
+- Assignment
+- Timeline view
 
-Private project for Dubiqo.
+### Analytics
+- Usage statistics
+- Performance metrics
+- User behavior
+- Revenue tracking
+
+## 🔒 RBAC System
+
+### Roles
+1. **client** (default)
+   - Own data access only
+   - View own projects, quotes, invoices
+   - Create tickets
+   - Access client portal
+
+2. **staff**
+   - View all data
+   - Manage projects, quotes, bookings
+   - Respond to tickets
+   - Access admin portal
+
+3. **admin**
+   - Full system access
+   - User management
+   - Role assignment
+   - System configuration
+   - Audit log access
+
+## 📝 Important Notes
+
+### Careers Module
+**REMOVED ENTIRELY** as per requirements. No career pages, application system, or related functionality.
+
+### Hidden Admin Portal
+- Never appears in public navigation
+- Not linked from any public page
+- Blocked in robots.txt
+- Meta tags: `noindex, nofollow`
+- Access only via direct URL for authenticated admin/staff
+
+### Auto-Confirm Email
+Enabled for development. In production, disable and configure proper email service.
+
+### Sample Data
+Includes seed data for:
+- Blog posts (5)
+- Case studies (3)
+- Downloads (3)
+- Feature flags
+
+## 🤝 Contributing
+
+This is a private project for Dubiqo Digital Solutions.
+
+## 📄 License
+
+Private & Proprietary - Dubiqo Digital Solutions
+
+## 🆘 Support
+
+For internal support:
+- Check documentation in `/docs`
+- Review backend in Lovable Cloud
+- Check audit logs for admin actions
+
+---
+
+**Built with ❤️ by Dubiqo Digital Solutions**
