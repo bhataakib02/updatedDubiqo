@@ -38,24 +38,24 @@ const values = [
 
 const team = [
   {
-    name: "Alex Morgan",
+    name: "Shayam Ahmad",
     role: "Founder & Lead Developer",
     image: "https://icon2.cleanpng.com/20180505/khw/kisspng-emojipedia-noto-fonts-emoticon-iphone-5aee006286ec14.9545327215255471065526.jpg",
   },
   {
-    name: "Sarah Chen",
+    name: "Mohammad Aakib Bhat",
+    role: "Co-Founder & Lead Developer",
+    image: "https://icon2.cleanpng.com/20180505/khw/kisspng-emojipedia-noto-fonts-emoticon-iphone-5aee006286ec14.9545327215255471065526.jpg",
+  },
+  {
+    name: "Jan Adnan Farooq",
     role: "Design Director",
-    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop",
+    image: "https://icon2.cleanpng.com/20180505/khw/kisspng-emojipedia-noto-fonts-emoticon-iphone-5aee006286ec14.9545327215255471065526.jpg",
   },
   {
-    name: "Michael Davis",
-    role: "Senior Developer",
-    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop",
-  },
-  {
-    name: "Emily Watson",
+    name: "Haroon Iqbal",
     role: "Project Manager",
-    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop",
+    image: "https://icon2.cleanpng.com/20180505/khw/kisspng-emojipedia-noto-fonts-emoticon-iphone-5aee006286ec14.9545327215255471065526.jpg",
   },
 ];
 
@@ -100,7 +100,7 @@ export default function About() {
                   growth potential.
                 </p>
                 <p>
-                  Founded in 2019, we set out to change that. Our mission is to
+                  Founded in 2025, we set out to change that. Our mission is to
                   democratize access to high-quality web development, making it
                   accessible to startups, freelancers, and small businesses.
                 </p>
