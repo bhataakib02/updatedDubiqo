@@ -17,7 +17,7 @@ const plans = [
   {
     name: "Starter",
     description: "Perfect for small businesses and startups",
-    price: "$2,499",
+    price: "₹2,499",
     priceNote: "one-time",
     features: [
       "Up to 5 pages",
@@ -33,7 +33,7 @@ const plans = [
   {
     name: "Professional",
     description: "For growing businesses that need more",
-    price: "$5,999",
+    price: "₹5,999",
     priceNote: "one-time",
     features: [
       "Up to 15 pages",
@@ -69,12 +69,12 @@ const plans = [
 ];
 
 const addOns = [
-  { name: "Extra Pages", price: "$150/page" },
-  { name: "E-Commerce Integration", price: "From $1,499" },
-  { name: "Custom Animations", price: "From $499" },
-  { name: "API Integration", price: "From $999" },
-  { name: "Monthly Maintenance", price: "From $199/mo" },
-  { name: "Content Writing", price: "$75/page" },
+  { name: "Extra Pages", price: "₹150/page" },
+  { name: "E-Commerce Integration", price: "From ₹1,499" },
+  { name: "Custom Animations", price: "From ₹499" },
+  { name: "API Integration", price: "From ₹999" },
+  { name: "Monthly Maintenance", price: "From ₹199/mo" },
+  { name: "Content Writing", price: "₹75/page" },
 ];
 
 const faqs = [
@@ -211,7 +211,7 @@ export default function Pricing() {
               {faqs.map((faq, index) => (
                 <AccordionItem
                   key={index}
-                  value={`item-${index}`}
+                  value={`item-₹{index}`}
                   className="bg-card/50 backdrop-blur border border-border/50 rounded-lg px-6"
                 >
                   <AccordionTrigger className="hover:no-underline">
