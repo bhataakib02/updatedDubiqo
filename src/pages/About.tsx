@@ -40,7 +40,7 @@ const team = [
   {
     name: "Alex Morgan",
     role: "Founder & Lead Developer",
-    image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop",
+    image: "https://icon2.cleanpng.com/20180505/khw/kisspng-emojipedia-noto-fonts-emoticon-iphone-5aee006286ec14.9545327215255471065526.jpg",
   },
   {
     name: "Sarah Chen",
