@@ -47,8 +47,11 @@ const Portfolios = () => {
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
               Portfolio Websites
             </h1>
-            <p className="text-xl text-foreground/70 mb-8">
+            <p className="text-xl text-foreground/70 mb-4">
               Your work deserves to shine. We create stunning portfolios that help you land dream jobs, attract clients, and build your personal brand.
+            </p>
+            <p className="text-lg text-primary font-medium mb-8 bg-primary/10 px-6 py-3 rounded-lg inline-block">
+              We design and build portfolio websites for other people — including students, developers, designers, freelancers, and working professionals.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button asChild size="lg" className="gradient-primary">

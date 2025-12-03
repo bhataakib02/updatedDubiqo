@@ -466,6 +466,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          client_code: string | null
           company_name: string | null
           created_at: string
           email: string
@@ -477,6 +478,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          client_code?: string | null
           company_name?: string | null
           created_at?: string
           email: string
@@ -488,6 +490,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          client_code?: string | null
           company_name?: string | null
           created_at?: string
           email?: string
@@ -775,6 +778,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_client_code: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
