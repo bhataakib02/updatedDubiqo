@@ -44,6 +44,10 @@ import Maintenance from "./pages/services/Maintenance";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminUsers from "./pages/admin/Users";
 import AdminProjects from "./pages/admin/Projects";
+import AdminTickets from "./pages/admin/Tickets";
+import AdminQuotes from "./pages/admin/Quotes";
+import AdminInvoices from "./pages/admin/Invoices";
+import AdminBookings from "./pages/admin/Bookings";
 
 const queryClient = new QueryClient();
 
@@ -106,22 +110,22 @@ const App = () => (
           } />
           <Route path="/admin/quotes" element={
             <ProtectedRoute requiredRole={['admin', 'staff']}>
-              <AdminDashboard />
+              <AdminQuotes />
             </ProtectedRoute>
           } />
           <Route path="/admin/bookings" element={
             <ProtectedRoute requiredRole={['admin', 'staff']}>
-              <AdminDashboard />
+              <AdminBookings />
             </ProtectedRoute>
           } />
           <Route path="/admin/invoices" element={
             <ProtectedRoute requiredRole={['admin', 'staff']}>
-              <AdminDashboard />
+              <AdminInvoices />
             </ProtectedRoute>
           } />
           <Route path="/admin/tickets" element={
             <ProtectedRoute requiredRole={['admin', 'staff']}>
-              <AdminDashboard />
+              <AdminTickets />
             </ProtectedRoute>
           } />
           

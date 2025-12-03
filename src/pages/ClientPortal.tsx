@@ -2,31 +2,54 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
-  LayoutDashboard, 
   FolderKanban, 
   FileText, 
-  CreditCard, 
+  CheckCircle2,
   MessageSquare, 
-  Settings,
   LogOut,
   Plus,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
-  ArrowRight
+  ArrowRight,
+  Download,
+  User
 } from "lucide-react";
-import type { User } from "@supabase/supabase-js";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
+import type { Tables } from "@/integrations/supabase/types";
+
+type Project = Tables<"projects">;
+type Invoice = Tables<"invoices">;
+type Ticket = Tables<"tickets">;
 
 export default function ClientPortal() {
   const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [profile, setProfile] = useState<Tables<"profiles"> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [stats, setStats] = useState({
+    activeProjects: 0,
+    pendingInvoices: 0,
+    completedProjects: 0,
+    openTickets: 0,
+    pendingAmount: 0
+  });
+  
+  // New ticket dialog
+  const [isTicketDialogOpen, setIsTicketDialogOpen] = useState(false);
+  const [newTicket, setNewTicket] = useState({ title: "", description: "", priority: "medium" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -42,6 +65,7 @@ export default function ClientPortal() {
         return;
       }
       setUser(session.user);
+      await loadUserData(session.user.id);
       setIsLoading(false);
     };
 
@@ -60,11 +84,134 @@ export default function ClientPortal() {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  const loadUserData = async (userId: string) => {
+    if (!supabase) return;
+
+    try {
+      // Load profile
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      setProfile(profileData);
+
+      // Load user's projects
+      const { data: projectsData } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('client_id', userId)
+        .order('created_at', { ascending: false });
+      
+      setProjects(projectsData || []);
+
+      // Load user's invoices
+      const { data: invoicesData } = await supabase
+        .from('invoices')
+        .select('*')
+        .eq('client_id', userId)
+        .order('created_at', { ascending: false });
+      
+      setInvoices(invoicesData || []);
+
+      // Load user's tickets
+      const { data: ticketsData } = await supabase
+        .from('tickets')
+        .select('*')
+        .eq('client_id', userId)
+        .order('created_at', { ascending: false });
+      
+      setTickets(ticketsData || []);
+
+      // Calculate stats
+      const activeProjects = (projectsData || []).filter(p => 
+        ['discovery', 'in_progress', 'review'].includes(p.status)
+      ).length;
+      const completedProjects = (projectsData || []).filter(p => p.status === 'completed').length;
+      const pendingInvoices = (invoicesData || []).filter(i => 
+        ['pending', 'sent', 'overdue'].includes(i.status)
+      );
+      const pendingAmount = pendingInvoices.reduce((sum, inv) => sum + Number(inv.total_amount), 0);
+      const openTickets = (ticketsData || []).filter(t => 
+        ['open', 'in_progress'].includes(t.status)
+      ).length;
+
+      setStats({
+        activeProjects,
+        pendingInvoices: pendingInvoices.length,
+        completedProjects,
+        openTickets,
+        pendingAmount
+      });
+    } catch (error) {
+      console.error('Error loading user data:', error);
+      toast.error('Failed to load your data');
+    }
+  };
+
   const handleLogout = async () => {
     if (!supabase) return;
     await supabase.auth.signOut();
     toast.success("Logged out successfully");
     navigate("/");
+  };
+
+  const handleCreateTicket = async () => {
+    if (!supabase || !user) return;
+    
+    if (!newTicket.title.trim() || !newTicket.description.trim()) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase.from('tickets').insert({
+        client_id: user.id,
+        title: newTicket.title,
+        description: newTicket.description,
+        priority: newTicket.priority,
+        status: 'open'
+      });
+
+      if (error) throw error;
+
+      toast.success("Support ticket created successfully");
+      setIsTicketDialogOpen(false);
+      setNewTicket({ title: "", description: "", priority: "medium" });
+      
+      // Reload tickets
+      await loadUserData(user.id);
+    } catch (error) {
+      console.error('Error creating ticket:', error);
+      toast.error("Failed to create ticket");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "completed":
+      case "paid":
+        return "bg-success/10 text-success border-success/20";
+      case "in_progress":
+      case "pending":
+      case "sent":
+        return "bg-warning/10 text-warning border-warning/20";
+      case "review":
+      case "open":
+        return "bg-primary/10 text-primary border-primary/20";
+      case "overdue":
+        return "bg-destructive/10 text-destructive border-destructive/20";
+      default:
+        return "bg-muted text-muted-foreground";
+    }
+  };
+
+  const formatStatus = (status: string) => {
+    return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
   if (isLoading) {
@@ -77,40 +224,6 @@ export default function ClientPortal() {
     );
   }
 
-  // Mock data - in production this would come from the database
-  const projects = [
-    { id: "1", name: "E-Commerce Redesign", status: "In Progress", progress: 65 },
-    { id: "2", name: "Mobile App MVP", status: "Review", progress: 90 },
-    { id: "3", name: "Dashboard Analytics", status: "Completed", progress: 100 },
-  ];
-
-  const invoices = [
-    { id: "INV-001", amount: 5000, status: "Paid", date: "2024-01-15" },
-    { id: "INV-002", amount: 3500, status: "Pending", date: "2024-01-28" },
-    { id: "INV-003", amount: 7500, status: "Draft", date: "2024-02-01" },
-  ];
-
-  const tickets = [
-    { id: "1", title: "Need logo in SVG format", priority: "Low", status: "Open" },
-    { id: "2", title: "Update contact form", priority: "Medium", status: "In Progress" },
-  ];
-
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "completed":
-      case "paid":
-        return "bg-success/10 text-success border-success/20";
-      case "in progress":
-      case "pending":
-        return "bg-warning/10 text-warning border-warning/20";
-      case "review":
-      case "open":
-        return "bg-primary/10 text-primary border-primary/20";
-      default:
-        return "bg-muted text-muted-foreground";
-    }
-  };
-
   return (
     <Layout>
       <section className="pt-28 pb-16 min-h-screen">
@@ -120,8 +233,14 @@ export default function ClientPortal() {
             <div>
               <h1 className="text-3xl font-bold mb-1">Client Portal</h1>
               <p className="text-muted-foreground">
-                Welcome back, {user?.user_metadata?.full_name || user?.email}
+                Welcome back, {profile?.full_name || user?.email}
               </p>
+              {profile?.client_code && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  <User className="w-4 h-4 inline mr-1" />
+                  Client ID: <span className="font-mono font-semibold">{profile.client_code}</span>
+                </p>
+              )}
             </div>
             <div className="flex items-center gap-3">
               <Button variant="outline" onClick={handleLogout}>
@@ -146,7 +265,7 @@ export default function ClientPortal() {
                     <FolderKanban className="w-6 h-6 text-primary" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">3</p>
+                    <p className="text-2xl font-bold">{stats.activeProjects}</p>
                     <p className="text-sm text-muted-foreground">Active Projects</p>
                   </div>
                 </div>
@@ -160,7 +279,7 @@ export default function ClientPortal() {
                     <FileText className="w-6 h-6 text-warning" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">$3,500</p>
+                    <p className="text-2xl font-bold">${stats.pendingAmount.toLocaleString()}</p>
                     <p className="text-sm text-muted-foreground">Pending Invoices</p>
                   </div>
                 </div>
@@ -174,7 +293,7 @@ export default function ClientPortal() {
                     <CheckCircle2 className="w-6 h-6 text-success" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">12</p>
+                    <p className="text-2xl font-bold">{stats.completedProjects}</p>
                     <p className="text-sm text-muted-foreground">Completed Projects</p>
                   </div>
                 </div>
@@ -188,7 +307,7 @@ export default function ClientPortal() {
                     <MessageSquare className="w-6 h-6 text-accent" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">2</p>
+                    <p className="text-2xl font-bold">{stats.openTickets}</p>
                     <p className="text-sm text-muted-foreground">Open Tickets</p>
                   </div>
                 </div>
@@ -205,105 +324,198 @@ export default function ClientPortal() {
             </TabsList>
 
             <TabsContent value="projects" className="space-y-4">
-              {projects.map((project) => (
-                <Card key={project.id} className="bg-card/50 backdrop-blur border-border/50">
-                  <CardContent className="p-6">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="font-semibold text-lg">{project.name}</h3>
-                          <Badge variant="outline" className={getStatusColor(project.status)}>
-                            {project.status}
-                          </Badge>
-                        </div>
-                        <div className="w-full bg-muted rounded-full h-2 mb-2">
-                          <div
-                            className="bg-primary h-2 rounded-full transition-all"
-                            style={{ width: `${project.progress}%` }}
-                          />
-                        </div>
-                        <p className="text-sm text-muted-foreground">{project.progress}% complete</p>
-                      </div>
-                      <Button variant="outline" size="sm">
-                        View Details
-                        <ArrowRight className="w-4 h-4 ml-2" />
-                      </Button>
-                    </div>
+              {projects.length === 0 ? (
+                <Card className="bg-card/50 backdrop-blur border-border/50">
+                  <CardContent className="p-8 text-center">
+                    <FolderKanban className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-muted-foreground mb-4">No projects yet</p>
+                    <Button asChild>
+                      <Link to="/quote">Start Your First Project</Link>
+                    </Button>
                   </CardContent>
                 </Card>
-              ))}
+              ) : (
+                projects.map((project) => (
+                  <Card key={project.id} className="bg-card/50 backdrop-blur border-border/50">
+                    <CardContent className="p-6">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="font-semibold text-lg">{project.title}</h3>
+                            <Badge variant="outline" className={getStatusColor(project.status)}>
+                              {formatStatus(project.status)}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-2">{project.description}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Type: {project.project_type} | Started: {project.start_date ? new Date(project.start_date).toLocaleDateString() : 'TBD'}
+                          </p>
+                        </div>
+                        <Button variant="outline" size="sm">
+                          View Details
+                          <ArrowRight className="w-4 h-4 ml-2" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </TabsContent>
 
             <TabsContent value="invoices" className="space-y-4">
-              {invoices.map((invoice) => (
-                <Card key={invoice.id} className="bg-card/50 backdrop-blur border-border/50">
-                  <CardContent className="p-6">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
-                          <FileText className="w-6 h-6 text-muted-foreground" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold">{invoice.id}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(invoice.date).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <p className="font-bold text-lg">${invoice.amount.toLocaleString()}</p>
-                          <Badge variant="outline" className={getStatusColor(invoice.status)}>
-                            {invoice.status}
-                          </Badge>
-                        </div>
-                        {invoice.status === "Pending" && (
-                          <Button size="sm" className="glow-primary">
-                            Pay Now
-                          </Button>
-                        )}
-                        {invoice.status === "Paid" && (
-                          <Button variant="outline" size="sm">
-                            Download
-                          </Button>
-                        )}
-                      </div>
-                    </div>
+              {invoices.length === 0 ? (
+                <Card className="bg-card/50 backdrop-blur border-border/50">
+                  <CardContent className="p-8 text-center">
+                    <FileText className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-muted-foreground">No invoices yet</p>
                   </CardContent>
                 </Card>
-              ))}
+              ) : (
+                invoices.map((invoice) => (
+                  <Card key={invoice.id} className="bg-card/50 backdrop-blur border-border/50">
+                    <CardContent className="p-6">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
+                            <FileText className="w-6 h-6 text-muted-foreground" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold">{invoice.invoice_number}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              Due: {new Date(invoice.due_date).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <p className="font-bold text-lg">
+                              {invoice.currency} {Number(invoice.total_amount).toLocaleString()}
+                            </p>
+                            <Badge variant="outline" className={getStatusColor(invoice.status)}>
+                              {formatStatus(invoice.status)}
+                            </Badge>
+                          </div>
+                          {['pending', 'sent', 'overdue'].includes(invoice.status) && (
+                            <Button size="sm" className="glow-primary">
+                              Pay Now
+                            </Button>
+                          )}
+                          {invoice.status === "paid" && invoice.pdf_url && (
+                            <Button variant="outline" size="sm" asChild>
+                              <a href={invoice.pdf_url} target="_blank" rel="noopener noreferrer">
+                                <Download className="w-4 h-4 mr-2" />
+                                Download
+                              </a>
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </TabsContent>
 
             <TabsContent value="support" className="space-y-4">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-semibold">Support Tickets</h3>
-                <Button size="sm">
-                  <Plus className="w-4 h-4 mr-2" />
-                  New Ticket
-                </Button>
-              </div>
-              
-              {tickets.map((ticket) => (
-                <Card key={ticket.id} className="bg-card/50 backdrop-blur border-border/50">
-                  <CardContent className="p-6">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div>
-                        <h3 className="font-semibold mb-1">{ticket.title}</h3>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className={getStatusColor(ticket.status)}>
-                            {ticket.status}
-                          </Badge>
-                          <Badge variant="secondary">{ticket.priority}</Badge>
-                        </div>
+                <Dialog open={isTicketDialogOpen} onOpenChange={setIsTicketDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm">
+                      <Plus className="w-4 h-4 mr-2" />
+                      New Ticket
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Create Support Ticket</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="title">Title *</Label>
+                        <Input
+                          id="title"
+                          placeholder="Brief description of your issue"
+                          value={newTicket.title}
+                          onChange={(e) => setNewTicket({ ...newTicket, title: e.target.value })}
+                        />
                       </div>
-                      <Button variant="outline" size="sm">
-                        View
-                        <ArrowRight className="w-4 h-4 ml-2" />
+                      <div className="space-y-2">
+                        <Label htmlFor="description">Description *</Label>
+                        <Textarea
+                          id="description"
+                          placeholder="Provide details about your issue or request"
+                          rows={4}
+                          value={newTicket.description}
+                          onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="priority">Priority</Label>
+                        <Select
+                          value={newTicket.priority}
+                          onValueChange={(value) => setNewTicket({ ...newTicket, priority: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="low">Low</SelectItem>
+                            <SelectItem value="medium">Medium</SelectItem>
+                            <SelectItem value="high">High</SelectItem>
+                            <SelectItem value="urgent">Urgent</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button 
+                        className="w-full" 
+                        onClick={handleCreateTicket}
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? "Creating..." : "Create Ticket"}
                       </Button>
                     </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+              
+              {tickets.length === 0 ? (
+                <Card className="bg-card/50 backdrop-blur border-border/50">
+                  <CardContent className="p-8 text-center">
+                    <MessageSquare className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-muted-foreground mb-4">No support tickets yet</p>
+                    <Button onClick={() => setIsTicketDialogOpen(true)}>
+                      Create Your First Ticket
+                    </Button>
                   </CardContent>
                 </Card>
-              ))}
+              ) : (
+                tickets.map((ticket) => (
+                  <Card key={ticket.id} className="bg-card/50 backdrop-blur border-border/50">
+                    <CardContent className="p-6">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                          <h3 className="font-semibold mb-1">{ticket.title}</h3>
+                          <p className="text-sm text-muted-foreground mb-2 line-clamp-2">{ticket.description}</p>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className={getStatusColor(ticket.status)}>
+                              {formatStatus(ticket.status)}
+                            </Badge>
+                            <Badge variant="secondary">{ticket.priority}</Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(ticket.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                        <Button variant="outline" size="sm">
+                          View
+                          <ArrowRight className="w-4 h-4 ml-2" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </TabsContent>
           </Tabs>
         </div>
