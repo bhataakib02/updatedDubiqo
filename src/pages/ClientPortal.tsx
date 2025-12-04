@@ -279,7 +279,7 @@ export default function ClientPortal() {
                     <FileText className="w-6 h-6 text-warning" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">${stats.pendingAmount.toLocaleString()}</p>
+                    <p className="text-2xl font-bold">₹{(stats.pendingAmount / 100).toLocaleString('en-IN')}</p>
                     <p className="text-sm text-muted-foreground">Pending Invoices</p>
                   </div>
                 </div>
@@ -389,7 +389,7 @@ export default function ClientPortal() {
                         <div className="flex items-center gap-4">
                           <div className="text-right">
                             <p className="font-bold text-lg">
-                              {invoice.currency} {Number(invoice.total_amount).toLocaleString()}
+                              ₹{(Number(invoice.total_amount) / 100).toLocaleString('en-IN')}
                             </p>
                             <Badge variant="outline" className={getStatusColor(invoice.status)}>
                               {formatStatus(invoice.status)}

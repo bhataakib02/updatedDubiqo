@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Section } from "@/components/ui/section";
@@ -10,25 +10,30 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Slider } from "@/components/ui/slider";
-import { useToast } from "@/hooks/use-toast";
-import { Calculator, Send, CheckCircle } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { Calculator, Send, CheckCircle, Loader2 } from "lucide-react";
+import { z } from "zod";
 
+// All prices in paise (smallest unit) for backend
+// Display prices in rupees for UI
 const services = [
-  { id: "websites", label: "Custom Website", basePrice: 2499 },
-  { id: "web-apps", label: "Web Application", basePrice: 7999 },
-  { id: "dashboards", label: "Dashboard", basePrice: 4999 },
-  { id: "ecommerce", label: "E-Commerce", basePrice: 5999 },
-  { id: "repair", label: "Site Repair", basePrice: 499 },
-  { id: "maintenance", label: "Maintenance", basePrice: 199 },
+  { id: "websites", label: "Custom Website", basePrice: 249900, displayPrice: "₹2,499" },
+  { id: "web-apps", label: "Web Application", basePrice: 799900, displayPrice: "₹7,999" },
+  { id: "dashboards", label: "Dashboard", basePrice: 499900, displayPrice: "₹4,999" },
+  { id: "ecommerce", label: "E-Commerce", basePrice: 599900, displayPrice: "₹5,999" },
+  { id: "repair", label: "Site Repair", basePrice: 49900, displayPrice: "₹499" },
+  { id: "maintenance", label: "Maintenance", basePrice: 19900, displayPrice: "₹199/mo" },
+  { id: "portfolio", label: "Portfolio Website", basePrice: 499900, displayPrice: "₹4,999" },
 ];
 
 const features = [
-  { id: "cms", label: "Content Management System", price: 500 },
-  { id: "auth", label: "User Authentication", price: 800 },
-  { id: "payments", label: "Payment Integration", price: 1000 },
-  { id: "analytics", label: "Advanced Analytics", price: 400 },
-  { id: "seo", label: "SEO Optimization", price: 600 },
-  { id: "api", label: "API Integration", price: 1200 },
+  { id: "cms", label: "Content Management System", price: 50000, displayPrice: "₹500" },
+  { id: "auth", label: "User Authentication", price: 80000, displayPrice: "₹800" },
+  { id: "payments", label: "Payment Integration", price: 100000, displayPrice: "₹1,000" },
+  { id: "analytics", label: "Advanced Analytics", price: 40000, displayPrice: "₹400" },
+  { id: "seo", label: "SEO Optimization", price: 60000, displayPrice: "₹600" },
+  { id: "api", label: "API Integration", price: 120000, displayPrice: "₹1,200" },
 ];
 
 const timelines = [
@@ -37,16 +42,42 @@ const timelines = [
   { id: "urgent", label: "Urgent (1-2 weeks)", multiplier: 2 },
 ];
 
+const quoteSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Please enter a valid email"),
+  details: z.string().optional(),
+});
+
 export default function Quote() {
   const [searchParams] = useSearchParams();
-  const initialService = searchParams.get("service") || "";
+  const initialService = searchParams.get("service") || searchParams.get("type") || "";
   
   const [selectedService, setSelectedService] = useState(initialService);
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [timeline, setTimeline] = useState("standard");
   const [pages, setPages] = useState([5]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [formData, setFormData] = useState({ name: "", email: "", details: "" });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [user, setUser] = useState<{ id: string } | null>(null);
+
+  useEffect(() => {
+    const getUser = async () => {
+      if (!supabase) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUser({ id: session.user.id });
+      }
+    };
+    getUser();
+  }, []);
+
+  // Format paise to INR display
+  const formatINR = (paise: number) => {
+    const rupees = paise / 100;
+    return `₹${rupees.toLocaleString('en-IN')}`;
+  };
 
   const calculateEstimate = () => {
     const service = services.find((s) => s.id === selectedService);
@@ -60,9 +91,9 @@ export default function Quote() {
       if (feature) total += feature.price;
     });
 
-    // Add page costs (for websites)
+    // Add page costs (for websites) - ₹150 per extra page
     if (selectedService === "websites" && pages[0] > 5) {
-      total += (pages[0] - 5) * 150;
+      total += (pages[0] - 5) * 15000; // ₹150 in paise
     }
 
     // Apply timeline multiplier
@@ -84,20 +115,97 @@ export default function Quote() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setErrors({});
+
+    // Validate
+    const result = quoteSchema.safeParse(formData);
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0] as string] = err.message;
+        }
+      });
+      setErrors(fieldErrors);
+      return;
+    }
+
+    if (!selectedService) {
+      toast.error("Please select a service");
+      return;
+    }
+
     setIsSubmitting(true);
 
-    // Simulate submission
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/quote-create`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            service_type: selectedService,
+            features: selectedFeatures,
+            pages: pages[0],
+            timeline,
+            name: formData.name,
+            email: formData.email,
+            details: formData.details,
+            client_id: user?.id || null,
+          }),
+        }
+      );
 
-    toast({
-      title: "Quote Request Submitted!",
-      description: "We'll review your requirements and get back to you within 24 hours.",
-    });
+      const data = await response.json();
 
-    setIsSubmitting(false);
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to submit quote");
+      }
+
+      setIsSubmitted(true);
+      toast.success("Quote Request Submitted!", {
+        description: "We'll review your requirements and get back to you within 24 hours.",
+      });
+    } catch (error) {
+      console.error("Error submitting quote:", error);
+      toast.error("Failed to submit quote. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const estimate = calculateEstimate();
+
+  if (isSubmitted) {
+    return (
+      <Layout>
+        <section className="pt-32 pb-16 min-h-screen">
+          <div className="container mx-auto px-4">
+            <Card className="max-w-lg mx-auto bg-card/50 backdrop-blur border-border/50">
+              <CardContent className="p-8 text-center">
+                <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="w-8 h-8 text-success" />
+                </div>
+                <h2 className="text-2xl font-bold mb-2">Quote Request Submitted!</h2>
+                <p className="text-muted-foreground mb-4">
+                  Thank you for your interest. We'll review your requirements and send you a detailed proposal within 24 hours.
+                </p>
+                <p className="text-sm text-muted-foreground mb-6">
+                  Estimated budget: <span className="font-bold text-primary">{formatINR(estimate)}</span>
+                </p>
+                <Button onClick={() => setIsSubmitted(false)} variant="outline">
+                  Submit Another Quote
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -112,7 +220,7 @@ export default function Quote() {
               Get Your <span className="gradient-text">Quote</span>
             </h1>
             <p className="text-xl text-muted-foreground">
-              Use our calculator to get an instant estimate, then submit for a
+              Use our calculator to get an instant estimate in INR, then submit for a
               detailed proposal.
             </p>
           </div>
@@ -154,7 +262,7 @@ export default function Quote() {
                         >
                           <span>{service.label}</span>
                           <span className="text-primary font-semibold">
-                            ${service.basePrice.toLocaleString()}
+                            {service.displayPrice}
                           </span>
                         </Label>
                       </div>
@@ -191,7 +299,7 @@ export default function Quote() {
                           </Label>
                         </div>
                         <span className="text-muted-foreground text-sm">
-                          +${feature.price}
+                          +{feature.displayPrice}
                         </span>
                       </div>
                     ))}
@@ -225,7 +333,7 @@ export default function Quote() {
                           {pages[0]} pages
                         </span>
                         <span className="text-muted-foreground">
-                          {pages[0] > 5 && `+$${(pages[0] - 5) * 150} for extra pages`}
+                          {pages[0] > 5 && `+₹${((pages[0] - 5) * 150).toLocaleString('en-IN')} for extra pages`}
                         </span>
                       </div>
                     </div>
@@ -291,24 +399,24 @@ export default function Quote() {
                           <div className="flex justify-between text-sm">
                             <span className="text-muted-foreground">Base Price</span>
                             <span>
-                              ${services.find((s) => s.id === selectedService)?.basePrice.toLocaleString()}
+                              {services.find((s) => s.id === selectedService)?.displayPrice}
                             </span>
                           </div>
                           {selectedFeatures.length > 0 && (
                             <div className="flex justify-between text-sm">
                               <span className="text-muted-foreground">Features</span>
                               <span>
-                                +${selectedFeatures.reduce((sum, id) => {
+                                +{formatINR(selectedFeatures.reduce((sum, id) => {
                                   const feature = features.find((f) => f.id === id);
                                   return sum + (feature?.price || 0);
-                                }, 0).toLocaleString()}
+                                }, 0))}
                               </span>
                             </div>
                           )}
                           {selectedService === "websites" && pages[0] > 5 && (
                             <div className="flex justify-between text-sm">
                               <span className="text-muted-foreground">Extra Pages</span>
-                              <span>+${((pages[0] - 5) * 150).toLocaleString()}</span>
+                              <span>+₹{((pages[0] - 5) * 150).toLocaleString('en-IN')}</span>
                             </div>
                           )}
                           {timeline !== "standard" && (
@@ -325,7 +433,7 @@ export default function Quote() {
                           <div className="flex justify-between items-center">
                             <span className="font-semibold">Total Estimate</span>
                             <span className="text-3xl font-bold gradient-text">
-                              ${estimate.toLocaleString()}
+                              {formatINR(estimate)}
                             </span>
                           </div>
                           <p className="text-xs text-muted-foreground mt-2">
@@ -341,24 +449,34 @@ export default function Quote() {
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="name">Your Name</Label>
-                        <Input id="name" name="name" required placeholder="John Doe" />
+                        <Label htmlFor="name">Your Name *</Label>
+                        <Input 
+                          id="name" 
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          placeholder="John Doe" 
+                          className={errors.name ? "border-destructive" : ""}
+                        />
+                        {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
+                        <Label htmlFor="email">Email *</Label>
                         <Input
                           id="email"
-                          name="email"
                           type="email"
-                          required
+                          value={formData.email}
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                           placeholder="john@example.com"
+                          className={errors.email ? "border-destructive" : ""}
                         />
+                        {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="details">Project Details</Label>
                         <Textarea
                           id="details"
-                          name="details"
+                          value={formData.details}
+                          onChange={(e) => setFormData({ ...formData, details: e.target.value })}
                           placeholder="Tell us about your project..."
                           rows={3}
                         />
@@ -369,7 +487,10 @@ export default function Quote() {
                         disabled={!selectedService || isSubmitting}
                       >
                         {isSubmitting ? (
-                          "Submitting..."
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Submitting...
+                          </>
                         ) : (
                           <>
                             Request Quote
