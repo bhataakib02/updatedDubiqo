@@ -1,38 +1,135 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Briefcase, Star, Code, Palette, FileText, Mail, CheckCircle2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Briefcase, Star, Code, Palette, FileText, Mail, CheckCircle2, Sparkles, Loader2, ArrowRight } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+const features = [
+  { icon: Code, title: "Project Showcase", description: "Beautifully organized project galleries" },
+  { icon: Palette, title: "Custom Design", description: "Tailored to your personal brand" },
+  { icon: FileText, title: "Resume Section", description: "Integrated CV and experience" },
+  { icon: Mail, title: "Contact Forms", description: "Easy ways for clients to reach you" },
+];
+
+const targetAudience = [
+  {
+    title: "Students & Fresh Graduates",
+    description: "Stand out in campus placements and land your first job",
+    benefit: "Perfect for showcasing college projects and internships",
+  },
+  {
+    title: "Developers & Engineers",
+    description: "Highlight your technical skills and open-source contributions",
+    benefit: "GitHub integration, live demos, and technical blog",
+  },
+  {
+    title: "Designers & Creatives",
+    description: "Visual showcase of your creative work and design process",
+    benefit: "Image galleries, case studies, and client testimonials",
+  },
+  {
+    title: "Freelancers",
+    description: "Professional online presence that attracts clients",
+    benefit: "Service listings, pricing, and easy booking",
+  },
+];
+
+const portfolioTemplates = [
+  {
+    id: "minimal-developer",
+    title: "Minimal Developer",
+    description: "Clean, minimal design perfect for developers and engineers. Focuses on code samples and projects.",
+    price: "₹4,999",
+    priceValue: 499900,
+    image: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=400&h=300&fit=crop",
+    features: ["Dark/Light mode", "GitHub integration", "Project showcase", "Blog section"],
+  },
+  {
+    id: "creative-designer",
+    title: "Creative Designer",
+    description: "Bold, visual-focused design for designers and creatives. Perfect for showcasing visual work.",
+    price: "₹5,999",
+    priceValue: 599900,
+    image: "https://images.unsplash.com/photo-1558655146-9f40138edfeb?w=400&h=300&fit=crop",
+    features: ["Image galleries", "Dribbble integration", "Case studies", "Animation effects"],
+  },
+  {
+    id: "professional-resume",
+    title: "Professional Resume",
+    description: "Corporate style perfect for job seekers and professionals. Clean and ATS-friendly.",
+    price: "₹3,999",
+    priceValue: 399900,
+    image: "https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=400&h=300&fit=crop",
+    features: ["PDF export", "LinkedIn style", "Skills section", "Testimonials"],
+  },
+];
 
 const Portfolios = () => {
-  const features = [
-    { icon: Code, title: "Project Showcase", description: "Beautifully organized project galleries" },
-    { icon: Palette, title: "Custom Design", description: "Tailored to your personal brand" },
-    { icon: FileText, title: "Resume Section", description: "Integrated CV and experience" },
-    { icon: Mail, title: "Contact Forms", description: "Easy ways for clients to reach you" },
-  ];
+  const navigate = useNavigate();
+  const [isCreating, setIsCreating] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
 
-  const targetAudience = [
-    {
-      title: "Students & Fresh Graduates",
-      description: "Stand out in campus placements and land your first job",
-      benefit: "Perfect for showcasing college projects and internships",
-    },
-    {
-      title: "Developers & Engineers",
-      description: "Highlight your technical skills and open-source contributions",
-      benefit: "GitHub integration, live demos, and technical blog",
-    },
-    {
-      title: "Designers & Creatives",
-      description: "Visual showcase of your creative work and design process",
-      benefit: "Image galleries, case studies, and client testimonials",
-    },
-    {
-      title: "Freelancers",
-      description: "Professional online presence that attracts clients",
-      benefit: "Service listings, pricing, and easy booking",
-    },
-  ];
+  const handleUseTemplate = async (templateId: string) => {
+    // Check if user is logged in
+    if (!supabase) {
+      toast.error("Please sign in to use this template");
+      navigate("/auth");
+      return;
+    }
+
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      toast.info("Please sign in to create a project");
+      navigate("/auth");
+      return;
+    }
+
+    setSelectedTemplate(templateId);
+    setIsCreating(true);
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/projects-create`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            template_id: templateId,
+            project_type: "portfolio",
+            client_id: session.user.id,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to create project");
+      }
+
+      toast.success("Project created!", {
+        description: "Your portfolio project has been created. Redirecting to your dashboard...",
+      });
+
+      // Redirect to client portal
+      setTimeout(() => {
+        navigate("/client-portal?tab=projects");
+      }, 1500);
+    } catch (error) {
+      console.error("Error creating project:", error);
+      toast.error("Failed to create project. Please try again.");
+    } finally {
+      setIsCreating(false);
+      setSelectedTemplate(null);
+    }
+  };
 
   return (
     <div className="min-h-screen">
@@ -54,8 +151,11 @@ const Portfolios = () => {
               We design and build portfolio websites for other people — including students, developers, designers, freelancers, and working professionals.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button asChild size="lg" className="gradient-primary">
-                <Link to="/quote">Start Your Portfolio</Link>
+              <Button asChild size="lg" className="gradient-primary glow-primary">
+                <Link to="/quote?type=portfolio">
+                  <Sparkles className="w-5 h-5 mr-2" />
+                  Get My Portfolio
+                </Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="border-primary/50">
                 <Link to="/portfolio">See Examples</Link>
@@ -65,8 +165,69 @@ const Portfolios = () => {
         </div>
       </section>
 
-      {/* Why You Need a Portfolio */}
+      {/* Portfolio Templates */}
       <section className="py-20 bg-card/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Choose Your Template</h2>
+            <p className="text-foreground/70 max-w-2xl mx-auto">
+              Pick a template that fits your style. Click "Use This Template" to start your project instantly.
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {portfolioTemplates.map((template) => (
+              <Card key={template.id} className="glass border-border/40 overflow-hidden group hover:border-primary/50 transition-all duration-300">
+                <div className="aspect-video relative overflow-hidden">
+                  <img
+                    src={template.image}
+                    alt={template.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+                  <div className="absolute bottom-4 left-4">
+                    <span className="text-2xl font-bold text-primary">{template.price}</span>
+                  </div>
+                </div>
+                <CardHeader>
+                  <CardTitle className="text-xl">{template.title}</CardTitle>
+                  <CardDescription className="pt-2">{template.description}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <ul className="space-y-2">
+                    {template.features.map((feature, index) => (
+                      <li key={index} className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <CheckCircle2 className="h-4 w-4 text-primary" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                  <Button
+                    className="w-full gradient-primary"
+                    onClick={() => handleUseTemplate(template.id)}
+                    disabled={isCreating && selectedTemplate === template.id}
+                  >
+                    {isCreating && selectedTemplate === template.id ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        Use This Template
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Why You Need a Portfolio */}
+      <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Why a Portfolio Website Matters</h2>
@@ -110,7 +271,7 @@ const Portfolios = () => {
       </section>
 
       {/* Features */}
-      <section className="py-20">
+      <section className="py-20 bg-card/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">What's Included</h2>
@@ -139,7 +300,7 @@ const Portfolios = () => {
       </section>
 
       {/* Target Audience */}
-      <section className="py-20 bg-card/30">
+      <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Perfect For</h2>
@@ -168,7 +329,7 @@ const Portfolios = () => {
       </section>
 
       {/* Pricing */}
-      <section className="py-20">
+      <section className="py-20 bg-card/30">
         <div className="container mx-auto px-4">
           <div className="max-w-2xl mx-auto">
             <Card className="glass border-primary glow">
@@ -210,8 +371,11 @@ const Portfolios = () => {
                 </div>
                 
                 <div className="pt-4">
-                  <Button asChild className="w-full gradient-primary" size="lg">
-                    <Link to="/quote">Get Started Now</Link>
+                  <Button asChild className="w-full gradient-primary glow-primary" size="lg">
+                    <Link to="/quote?type=portfolio">
+                      <Sparkles className="w-5 h-5 mr-2" />
+                      Get Started Now
+                    </Link>
                   </Button>
                 </div>
               </CardContent>
@@ -221,7 +385,7 @@ const Portfolios = () => {
       </section>
 
       {/* Testimonial */}
-      <section className="py-20 bg-card/30">
+      <section className="py-20">
         <div className="container mx-auto px-4">
           <Card className="glass border-border/40 max-w-3xl mx-auto">
             <CardContent className="p-8">
@@ -243,7 +407,7 @@ const Portfolios = () => {
       </section>
 
       {/* CTA */}
-      <section className="py-20">
+      <section className="py-20 bg-card/30">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">
             Ready to Build Your Portfolio?
@@ -251,8 +415,11 @@ const Portfolios = () => {
           <p className="text-xl text-foreground/70 mb-8 max-w-2xl mx-auto">
             Let's create a portfolio that opens doors for you
           </p>
-          <Button asChild size="lg" className="gradient-primary">
-            <Link to="/quote">Get Your Portfolio</Link>
+          <Button asChild size="lg" className="gradient-primary glow-primary">
+            <Link to="/quote?type=portfolio">
+              <Sparkles className="w-5 h-5 mr-2" />
+              Get Your Portfolio
+            </Link>
           </Button>
         </div>
       </section>
