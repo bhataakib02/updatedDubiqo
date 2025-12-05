@@ -28,7 +28,7 @@ const services = [
       "Analytics integration",
       "Security best practices",
     ],
-    pricing: "From $2,499",
+    pricing: "From ₹1,99,900",
   },
   {
     icon: Layers,
@@ -43,7 +43,7 @@ const services = [
       "Real-time features",
       "Scalable architecture",
     ],
-    pricing: "From $7,999",
+    pricing: "From ₹6,49,900",
   },
   {
     icon: LineChart,
@@ -58,7 +58,7 @@ const services = [
       "Role-based access",
       "Mobile responsive",
     ],
-    pricing: "From $4,999",
+    pricing: "From ₹3,99,900",
   },
   {
     icon: ShoppingCart,
@@ -73,7 +73,7 @@ const services = [
       "Order management",
       "Marketing tools",
     ],
-    pricing: "From $5,999",
+    pricing: "From ₹4,99,900",
   },
   {
     icon: Wrench,
@@ -88,7 +88,7 @@ const services = [
       "Browser compatibility",
       "Code cleanup",
     ],
-    pricing: "From $499",
+    pricing: "From ₹39,900",
   },
   {
     icon: Headphones,
@@ -103,7 +103,7 @@ const services = [
       "Technical support",
       "Backup management",
     ],
-    pricing: "From $199/mo",
+    pricing: "From ₹14,900/mo",
   },
 ];
 

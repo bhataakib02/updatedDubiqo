@@ -8,7 +8,7 @@ import {
   FolderKanban, 
   FileText, 
   Calendar, 
-  DollarSign, 
+  IndianRupee, 
   Ticket,
   TrendingUp,
   BarChart
@@ -66,7 +66,7 @@ export default function AdminDashboard() {
     { title: "Active Projects", value: stats.projects, icon: FolderKanban, link: "/admin/projects", color: "text-green-500" },
     { title: "Pending Quotes", value: stats.quotes, icon: FileText, link: "/admin/quotes", color: "text-yellow-500" },
     { title: "Upcoming Bookings", value: stats.bookings, icon: Calendar, link: "/admin/bookings", color: "text-purple-500" },
-    { title: "Invoices", value: stats.invoices, icon: DollarSign, link: "/admin/invoices", color: "text-emerald-500" },
+    { title: "Invoices", value: stats.invoices, icon: IndianRupee, link: "/admin/invoices", color: "text-emerald-500" },
     { title: "Open Tickets", value: stats.tickets, icon: Ticket, link: "/admin/tickets", color: "text-red-500" }
   ];
 
