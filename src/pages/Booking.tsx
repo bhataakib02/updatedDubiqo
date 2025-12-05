@@ -8,10 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useToast } from "@/hooks/use-toast";
-import { CalendarDays, Clock, Video, CheckCircle } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { CalendarDays, Clock, Video, CheckCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format, addDays, setHours, setMinutes, isBefore, startOfDay } from "date-fns";
+import { format, addDays, isBefore, startOfDay } from "date-fns";
 
 const timeSlots = [
   "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
@@ -23,19 +24,19 @@ const meetingTypes = [
   {
     id: "discovery",
     title: "Discovery Call",
-    duration: "30 min",
+    duration: 30,
     description: "Learn about our services and discuss your needs",
   },
   {
     id: "consultation",
     title: "Project Consultation",
-    duration: "60 min",
+    duration: 60,
     description: "In-depth discussion about your project requirements",
   },
   {
     id: "demo",
     title: "Product Demo",
-    duration: "45 min",
+    duration: 45,
     description: "See our work and capabilities in action",
   },
 ];
@@ -46,22 +47,62 @@ export default function Booking() {
   const [meetingType, setMeetingType] = useState("discovery");
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    company: "",
+    notes: "",
+  });
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    if (!selectedDate || !selectedTime) {
+      toast.error("Please select a date and time");
+      return;
+    }
+
     setIsSubmitting(true);
 
-    // Simulate submission
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      const meeting = meetingTypes.find((m) => m.id === meetingType);
+      const [hours, minutes] = selectedTime.split(':').map(Number);
+      const scheduledAt = new Date(selectedDate);
+      scheduledAt.setHours(hours, minutes, 0, 0);
 
-    toast({
-      title: "Booking Confirmed!",
-      description: `Your ${meetingTypes.find((m) => m.id === meetingType)?.title} is scheduled for ${selectedDate ? format(selectedDate, "MMMM d, yyyy") : ""} at ${selectedTime}.`,
-    });
+      // Get current user if logged in
+      const { data: { user } } = await supabase.auth.getUser();
 
-    setIsSubmitting(false);
-    setStep(4); // Show confirmation
+      const bookingData = {
+        booking_type: meeting?.title || meetingType,
+        scheduled_at: scheduledAt.toISOString(),
+        duration_minutes: meeting?.duration || 30,
+        status: 'confirmed',
+        notes: formData.notes || null,
+        client_id: user?.id || null,
+        metadata: {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          company: formData.company,
+        },
+      };
+
+      const { error } = await supabase
+        .from('bookings')
+        .insert(bookingData);
+
+      if (error) throw error;
+
+      toast.success("Booking confirmed! Check your email for details.");
+      setStep(4);
+    } catch (error) {
+      console.error('Error creating booking:', error);
+      toast.error("Failed to create booking. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const disabledDays = (date: Date) => {
@@ -69,6 +110,8 @@ export default function Booking() {
     const today = startOfDay(new Date());
     return day === 0 || day === 6 || isBefore(date, today);
   };
+
+  const meeting = meetingTypes.find((m) => m.id === meetingType);
 
   return (
     <Layout>
@@ -133,9 +176,7 @@ export default function Booking() {
                   <div className="bg-muted/30 rounded-lg p-6 max-w-sm mx-auto mb-8">
                     <div className="flex items-center gap-3 mb-3">
                       <Video className="w-5 h-5 text-primary" />
-                      <span className="font-medium">
-                        {meetingTypes.find((m) => m.id === meetingType)?.title}
-                      </span>
+                      <span className="font-medium">{meeting?.title}</span>
                     </div>
                     <div className="flex items-center gap-3 mb-3">
                       <CalendarDays className="w-5 h-5 text-primary" />
@@ -145,10 +186,10 @@ export default function Booking() {
                     </div>
                     <div className="flex items-center gap-3">
                       <Clock className="w-5 h-5 text-primary" />
-                      <span>{selectedTime} EST</span>
+                      <span>{selectedTime} IST</span>
                     </div>
                   </div>
-                  <Button onClick={() => { setStep(1); setSelectedDate(undefined); setSelectedTime(""); }}>
+                  <Button onClick={() => { setStep(1); setSelectedDate(undefined); setSelectedTime(""); setFormData({ firstName: "", lastName: "", email: "", company: "", notes: "" }); }}>
                     Book Another Call
                   </Button>
                 </CardContent>
@@ -185,7 +226,7 @@ export default function Booking() {
                                 <div className="flex items-center justify-between mb-1">
                                   <span className="font-medium">{type.title}</span>
                                   <span className="text-sm text-muted-foreground">
-                                    {type.duration}
+                                    {type.duration} min
                                   </span>
                                 </div>
                                 <span className="text-sm text-muted-foreground">
@@ -226,7 +267,7 @@ export default function Booking() {
 
                         {selectedDate && (
                           <div>
-                            <Label className="mb-3 block">Available Times</Label>
+                            <Label className="mb-3 block">Available Times (IST)</Label>
                             <div className="grid grid-cols-3 gap-2">
                               {timeSlots.map((time) => (
                                 <Button
@@ -271,11 +312,23 @@ export default function Booking() {
                           <div className="grid sm:grid-cols-2 gap-4">
                             <div className="space-y-2">
                               <Label htmlFor="firstName">First Name</Label>
-                              <Input id="firstName" required placeholder="John" />
+                              <Input 
+                                id="firstName" 
+                                required 
+                                placeholder="John"
+                                value={formData.firstName}
+                                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                              />
                             </div>
                             <div className="space-y-2">
                               <Label htmlFor="lastName">Last Name</Label>
-                              <Input id="lastName" required placeholder="Doe" />
+                              <Input 
+                                id="lastName" 
+                                required 
+                                placeholder="Doe"
+                                value={formData.lastName}
+                                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                              />
                             </div>
                           </div>
                           <div className="space-y-2">
@@ -285,11 +338,18 @@ export default function Booking() {
                               type="email"
                               required
                               placeholder="john@example.com"
+                              value={formData.email}
+                              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                             />
                           </div>
                           <div className="space-y-2">
                             <Label htmlFor="company">Company (Optional)</Label>
-                            <Input id="company" placeholder="Your Company" />
+                            <Input 
+                              id="company" 
+                              placeholder="Your Company"
+                              value={formData.company}
+                              onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                            />
                           </div>
                           <div className="space-y-2">
                             <Label htmlFor="notes">Additional Notes</Label>
@@ -297,6 +357,8 @@ export default function Booking() {
                               id="notes"
                               placeholder="Anything you'd like us to know before the call..."
                               rows={3}
+                              value={formData.notes}
+                              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                             />
                           </div>
                           <div className="flex gap-3">
@@ -312,7 +374,14 @@ export default function Booking() {
                               className="flex-1 glow-primary"
                               disabled={isSubmitting}
                             >
-                              {isSubmitting ? "Booking..." : "Confirm Booking"}
+                              {isSubmitting ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  Booking...
+                                </>
+                              ) : (
+                                "Confirm Booking"
+                              )}
                             </Button>
                           </div>
                         </form>
@@ -331,11 +400,9 @@ export default function Booking() {
                       <div className="flex items-center gap-3">
                         <Video className="w-5 h-5 text-primary" />
                         <div>
-                          <div className="font-medium">
-                            {meetingTypes.find((m) => m.id === meetingType)?.title}
-                          </div>
+                          <div className="font-medium">{meeting?.title}</div>
                           <div className="text-sm text-muted-foreground">
-                            {meetingTypes.find((m) => m.id === meetingType)?.duration}
+                            {meeting?.duration} min
                           </div>
                         </div>
                       </div>
@@ -355,7 +422,7 @@ export default function Booking() {
                         <div className="flex items-center gap-3">
                           <Clock className="w-5 h-5 text-primary" />
                           <div>
-                            <div className="font-medium">{selectedTime} EST</div>
+                            <div className="font-medium">{selectedTime} IST</div>
                           </div>
                         </div>
                       )}

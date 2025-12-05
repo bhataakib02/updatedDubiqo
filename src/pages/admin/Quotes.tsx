@@ -178,7 +178,7 @@ export default function AdminQuotes() {
                           </div>
                         </TableCell>
                         <TableCell>{quote.service_type}</TableCell>
-                        <TableCell className="font-semibold">${Number(quote.estimated_cost).toLocaleString()}</TableCell>
+                        <TableCell className="font-semibold">₹{Number(quote.estimated_cost / 100).toLocaleString('en-IN')}</TableCell>
                         <TableCell>{new Date(quote.valid_until).toLocaleDateString()}</TableCell>
                         <TableCell>
                           <Select

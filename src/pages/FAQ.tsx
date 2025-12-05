@@ -19,7 +19,7 @@ const faqCategories = [
       },
       {
         question: "How much does a website cost?",
-        answer: "Our website projects start at $2,499 for simple sites and can range higher depending on complexity. We provide detailed quotes after understanding your requirements. Use our quote calculator for an instant estimate.",
+        answer: "Our website projects start at ₹1,99,900 for simple sites and can range higher depending on complexity. We provide detailed quotes after understanding your requirements. Use our quote calculator for an instant estimate.",
       },
       {
         question: "How long does a project take?",
@@ -70,7 +70,7 @@ const faqCategories = [
     faqs: [
       {
         question: "What support do you offer after launch?",
-        answer: "All projects include a support period (varies by plan). After that, we offer monthly maintenance packages starting at $199/month for ongoing updates, security monitoring, and technical support.",
+        answer: "All projects include a support period (varies by plan). After that, we offer monthly maintenance packages starting at ₹14,900/month for ongoing updates, security monitoring, and technical support.",
       },
       {
         question: "Can you host my website?",

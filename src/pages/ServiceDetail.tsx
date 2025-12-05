@@ -41,7 +41,7 @@ const servicesData: Record<string, {
       { step: "03", title: "Development", description: "Build your website with clean, maintainable code." },
       { step: "04", title: "Launch", description: "Deploy, test, and optimize for performance." }
     ],
-    pricing: { from: "$2,500", note: "Starting price for a 5-page website" }
+    pricing: { from: "₹1,99,900", note: "Starting price for a 5-page website" }
   },
   "web-apps": {
     title: "Web Applications",
@@ -69,7 +69,7 @@ const servicesData: Record<string, {
       { step: "03", title: "Development", description: "Agile development with regular demos and feedback." },
       { step: "04", title: "Deployment", description: "Launch, monitor, and iterate based on usage." }
     ],
-    pricing: { from: "$10,000", note: "Starting price for MVP development" }
+    pricing: { from: "₹7,99,900", note: "Starting price for MVP development" }
   },
   dashboards: {
     title: "Dashboards & Analytics",
@@ -97,7 +97,7 @@ const servicesData: Record<string, {
       { step: "03", title: "Integration", description: "Connect data sources and build the dashboard." },
       { step: "04", title: "Training", description: "Train your team and provide documentation." }
     ],
-    pricing: { from: "$5,000", note: "Starting price for custom dashboard" }
+    pricing: { from: "₹3,99,900", note: "Starting price for custom dashboard" }
   },
   ecommerce: {
     title: "E-Commerce Solutions",
@@ -125,7 +125,7 @@ const servicesData: Record<string, {
       { step: "03", title: "Build", description: "Develop store with payment and shipping integration." },
       { step: "04", title: "Launch", description: "Go live with marketing and SEO optimization." }
     ],
-    pricing: { from: "$8,000", note: "Starting price for custom store" }
+    pricing: { from: "₹6,49,900", note: "Starting price for custom store" }
   },
   repair: {
     title: "Site Repair & Recovery",
@@ -153,7 +153,7 @@ const servicesData: Record<string, {
       { step: "03", title: "Repair", description: "Fix issues and test thoroughly." },
       { step: "04", title: "Prevention", description: "Implement measures to prevent future issues." }
     ],
-    pricing: { from: "$500", note: "Starting price for basic repairs" }
+    pricing: { from: "₹39,900", note: "Starting price for basic repairs" }
   },
   maintenance: {
     title: "Ongoing Maintenance",
@@ -181,7 +181,7 @@ const servicesData: Record<string, {
       { step: "03", title: "Execute", description: "Regular maintenance and updates." },
       { step: "04", title: "Report", description: "Monthly reports on site health and work done." }
     ],
-    pricing: { from: "$299/mo", note: "Starting price for monthly maintenance" }
+    pricing: { from: "₹24,900/mo", note: "Starting price for monthly maintenance" }
   }
 };
 
