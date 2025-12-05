@@ -211,7 +211,7 @@ export default function Pricing() {
               {faqs.map((faq, index) => (
                 <AccordionItem
                   key={index}
-                  value={`item-₹{index}`}
+                  value={`item-${index}`}
                   className="bg-card/50 backdrop-blur border border-border/50 rounded-lg px-6"
                 >
                   <AccordionTrigger className="hover:no-underline">

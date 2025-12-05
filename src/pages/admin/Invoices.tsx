@@ -7,7 +7,18 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Search, DollarSign, RefreshCw, Eye, Plus } from "lucide-react";
+import { ArrowLeft, Search, IndianRupee, RefreshCw, Eye, Plus } from "lucide-react";
+
+// Format paise to INR display
+const formatINR = (paise: number) => {
+  const rupees = paise / 100;
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(rupees);
+};
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -133,9 +144,9 @@ export default function AdminInvoices() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Total Pending</p>
-                  <p className="text-2xl font-bold text-warning">${totalPending.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-warning">{formatINR(totalPending)}</p>
                 </div>
-                <DollarSign className="w-8 h-8 text-warning" />
+                <IndianRupee className="w-8 h-8 text-warning" />
               </div>
             </CardContent>
           </Card>
@@ -144,9 +155,9 @@ export default function AdminInvoices() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Total Paid</p>
-                  <p className="text-2xl font-bold text-success">${totalPaid.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-success">{formatINR(totalPaid)}</p>
                 </div>
-                <DollarSign className="w-8 h-8 text-success" />
+                <IndianRupee className="w-8 h-8 text-success" />
               </div>
             </CardContent>
           </Card>
@@ -156,7 +167,7 @@ export default function AdminInvoices() {
           <CardHeader>
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex items-center gap-2">
-                <DollarSign className="w-5 h-5" />
+                <IndianRupee className="w-5 h-5" />
                 <CardTitle>All Invoices ({filteredInvoices.length})</CardTitle>
               </div>
               <div className="flex items-center gap-2">
@@ -197,7 +208,7 @@ export default function AdminInvoices() {
               </div>
             ) : filteredInvoices.length === 0 ? (
               <div className="text-center py-8">
-                <DollarSign className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                <IndianRupee className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-muted-foreground">No invoices found</p>
               </div>
             ) : (
@@ -228,7 +239,7 @@ export default function AdminInvoices() {
                           </div>
                         </TableCell>
                         <TableCell className="font-semibold">
-                          {invoice.currency} {Number(invoice.total_amount).toLocaleString()}
+                          {formatINR(Number(invoice.total_amount))}
                         </TableCell>
                         <TableCell>{new Date(invoice.due_date).toLocaleDateString()}</TableCell>
                         <TableCell>
