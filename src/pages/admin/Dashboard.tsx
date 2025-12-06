@@ -119,19 +119,16 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent className="space-y-2">
               <Link to="/admin/users">
-                <Button variant="outline" className="w-full justify-start">
-                  Manage Users
-                </Button>
+                <Button variant="outline" className="w-full justify-start">Manage Users</Button>
               </Link>
               <Link to="/admin/projects">
-                <Button variant="outline" className="w-full justify-start">
-                  View Projects
-                </Button>
+                <Button variant="outline" className="w-full justify-start">View Projects</Button>
               </Link>
               <Link to="/admin/invoices">
-                <Button variant="outline" className="w-full justify-start">
-                  Create Invoice
-                </Button>
+                <Button variant="outline" className="w-full justify-start">Create Invoice</Button>
+              </Link>
+              <Link to="/admin/downloads">
+                <Button variant="outline" className="w-full justify-start">Manage Downloads</Button>
               </Link>
             </CardContent>
           </Card>

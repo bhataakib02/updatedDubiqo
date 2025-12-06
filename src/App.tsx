@@ -48,6 +48,7 @@ import AdminTickets from "./pages/admin/Tickets";
 import AdminQuotes from "./pages/admin/Quotes";
 import AdminInvoices from "./pages/admin/Invoices";
 import AdminBookings from "./pages/admin/Bookings";
+import AdminDownloads from "./pages/admin/Downloads";
 
 const queryClient = new QueryClient();
 
@@ -126,6 +127,11 @@ const App = () => (
           <Route path="/admin/tickets" element={
             <ProtectedRoute requiredRole={['admin', 'staff']}>
               <AdminTickets />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/downloads" element={
+            <ProtectedRoute requiredRole={['admin', 'staff']}>
+              <AdminDownloads />
             </ProtectedRoute>
           } />
           
