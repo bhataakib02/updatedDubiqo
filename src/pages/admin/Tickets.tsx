@@ -1,25 +1,82 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Search, Ticket, RefreshCw, Eye } from "lucide-react";
-import { toast } from "sonner";
-import type { Tables } from "@/integrations/supabase/types";
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  ArrowLeft,
+  Search,
+  Ticket,
+  RefreshCw,
+  Eye,
+  MoreVertical,
+  MessageSquare,
+  UserPlus,
+  Trash2,
+  Mail,
+  Download,
+  Send,
+} from 'lucide-react';
+import { toast } from 'sonner';
+import type { Tables } from '@/integrations/supabase/types';
 
-type TicketWithClient = Tables<"tickets"> & {
+type TicketWithClient = Tables<'tickets'> & {
   client?: { email: string; full_name: string | null; client_code: string | null } | null;
+  messages?: Array<{
+    id: string;
+    message: string;
+    is_internal: boolean | null;
+    created_at: string;
+    user_id: string;
+  }>;
 };
 
 export default function AdminTickets() {
   const [tickets, setTickets] = useState<TicketWithClient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedTicket, setSelectedTicket] = useState<TicketWithClient | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isReplyOpen, setIsReplyOpen] = useState(false);
+  const [replyMessage, setReplyMessage] = useState('');
+  const [isInternal, setIsInternal] = useState(false);
+  const [isSubmittingReply, setIsSubmittingReply] = useState(false);
 
   useEffect(() => {
     loadTickets();
@@ -28,14 +85,16 @@ export default function AdminTickets() {
   const loadTickets = async () => {
     if (!supabase) return;
     setIsLoading(true);
-    
+
     try {
       const { data, error } = await supabase
         .from('tickets')
-        .select(`
+        .select(
+          `
           *,
           client:profiles!tickets_client_id_fkey(email, full_name, client_code)
-        `)
+        `
+        )
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -50,11 +109,11 @@ export default function AdminTickets() {
 
   const updateTicketStatus = async (ticketId: string, newStatus: string) => {
     if (!supabase) return;
-    
+
     try {
       const { error } = await supabase
         .from('tickets')
-        .update({ status: newStatus })
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
         .eq('id', ticketId);
 
       if (error) throw error;
@@ -66,32 +125,241 @@ export default function AdminTickets() {
     }
   };
 
-  const filteredTickets = tickets.filter(ticket => {
-    const matchesSearch = 
+  const handleViewTicket = async (ticket: TicketWithClient) => {
+    // Load ticket with messages
+    try {
+      const { data: messages } = await supabase
+        .from('ticket_messages')
+        .select('*')
+        .eq('ticket_id', ticket.id)
+        .order('created_at', { ascending: true });
+
+      setSelectedTicket({
+        ...ticket,
+        messages: messages || [],
+      });
+      setIsDetailOpen(true);
+    } catch (error) {
+      console.error('Error loading ticket messages:', error);
+      setSelectedTicket(ticket);
+      setIsDetailOpen(true);
+    }
+  };
+
+  const handleReplyTicket = (ticket: TicketWithClient) => {
+    setSelectedTicket(ticket);
+    setReplyMessage('');
+    setIsInternal(false);
+    setIsReplyOpen(true);
+  };
+
+  const submitReply = async () => {
+    if (!selectedTicket || !replyMessage.trim()) {
+      toast.error('Please enter a reply message');
+      return;
+    }
+
+    setIsSubmittingReply(true);
+
+    try {
+      // Get current user
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('You must be logged in to reply');
+        return;
+      }
+
+      // Get user profile ID
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile) {
+        toast.error('Profile not found');
+        return;
+      }
+
+      // Create reply message
+      const { data: reply, error: replyError } = await supabase
+        .from('ticket_messages')
+        .insert({
+          ticket_id: selectedTicket.id,
+          user_id: profile.id,
+          message: replyMessage.trim(),
+          is_internal: isInternal,
+        })
+        .select()
+        .single();
+
+      if (replyError) throw replyError;
+
+      // Update ticket status and updated_at
+      // If ticket was closed, reopen it when a reply is added
+      const newStatus = selectedTicket.status === 'closed' ? 'open' : selectedTicket.status;
+      const { error: updateError } = await supabase
+        .from('tickets')
+        .update({
+          status: newStatus,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', selectedTicket.id);
+
+      if (updateError) {
+        console.error('Error updating ticket:', updateError);
+        // Don't fail the whole operation if status update fails
+      }
+
+      toast.success('Reply sent successfully');
+      setIsReplyOpen(false);
+      setReplyMessage('');
+      setIsInternal(false);
+
+      // Reload tickets to show updated status
+      await loadTickets();
+
+      // If detail dialog was open, refresh the ticket data with messages
+      if (isDetailOpen && selectedTicket) {
+        // Reload the ticket with updated messages
+        const { data: messages } = await supabase
+          .from('ticket_messages')
+          .select('*')
+          .eq('ticket_id', selectedTicket.id)
+          .order('created_at', { ascending: true });
+
+        // Get updated ticket from fresh load
+        const { data: updatedTicketData } = await supabase
+          .from('tickets')
+          .select(
+            `
+            *,
+            client:profiles!tickets_client_id_fkey(email, full_name, client_code)
+          `
+          )
+          .eq('id', selectedTicket.id)
+          .single();
+
+        if (updatedTicketData) {
+          setSelectedTicket({
+            ...updatedTicketData,
+            messages: messages || [],
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error submitting reply:', error);
+      toast.error('Failed to send reply');
+    } finally {
+      setIsSubmittingReply(false);
+    }
+  };
+
+  const handleAssignTicket = async (ticket: TicketWithClient) => {
+    // Get current user for assignment
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error('You must be logged in to assign tickets');
+      return;
+    }
+
+    try {
+      // The assigned_to field references profiles(id), which is the same as auth.users(id)
+      // So we can use user.id directly
+      const { error } = await supabase
+        .from('tickets')
+        .update({
+          assigned_to: user.id,
+          updated_at: new Date().toISOString(),
+          status: ticket.status === 'open' ? 'in_progress' : ticket.status, // Auto-update status if open
+        })
+        .eq('id', ticket.id);
+
+      if (error) throw error;
+      toast.success('Ticket assigned to you');
+      loadTickets();
+    } catch (error) {
+      console.error('Error assigning ticket:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error(`Failed to assign ticket: ${errorMessage}`);
+    }
+  };
+
+  const handleEmailClient = (ticket: TicketWithClient) => {
+    if (!ticket.client?.email) {
+      toast.error('Client email not available');
+      return;
+    }
+    // Open email client or copy email
+    window.location.href = `mailto:${ticket.client.email}?subject=Re: ${ticket.title}`;
+    toast.success('Opening email client...');
+  };
+
+  const handleDeleteTicket = async (ticket: TicketWithClient) => {
+    if (!confirm(`Are you sure you want to delete ticket "${ticket.title}"?`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase.from('tickets').delete().eq('id', ticket.id);
+
+      if (error) throw error;
+      toast.success('Ticket deleted successfully');
+      loadTickets();
+    } catch (error) {
+      console.error('Error deleting ticket:', error);
+      toast.error('Failed to delete ticket');
+    }
+  };
+
+  const filteredTickets = tickets.filter((ticket) => {
+    const matchesSearch =
       ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.client?.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.client?.client_code?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || ticket.status === statusFilter;
+      ticket.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ticket.client?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ticket.client?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ticket.client?.client_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ticket.category?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'open': return 'bg-warning/10 text-warning border-warning/20';
-      case 'in_progress': return 'bg-primary/10 text-primary border-primary/20';
-      case 'resolved': return 'bg-success/10 text-success border-success/20';
-      case 'closed': return 'bg-muted text-muted-foreground';
-      default: return 'bg-muted text-muted-foreground';
+      case 'open':
+        return 'bg-orange-500/10 text-orange-500 border-orange-500/20';
+      case 'in_progress':
+        return 'bg-blue-500/10 text-blue-500 border-blue-500/20';
+      case 'resolved':
+        return 'bg-green-500/10 text-green-500 border-green-500/20';
+      case 'closed':
+        return 'bg-gray-500/10 text-gray-500 border-gray-500/20';
+      default:
+        return 'bg-muted text-muted-foreground';
     }
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'urgent': return 'bg-destructive/10 text-destructive border-destructive/20';
-      case 'high': return 'bg-warning/10 text-warning border-warning/20';
-      case 'medium': return 'bg-primary/10 text-primary border-primary/20';
-      default: return 'bg-muted text-muted-foreground';
+      case 'urgent':
+        return 'bg-red-500/10 text-red-500 border-red-500/20';
+      case 'high':
+        return 'bg-orange-500/10 text-orange-500 border-orange-500/20';
+      case 'medium':
+        return 'bg-green-500/10 text-green-500 border-green-500/20';
+      case 'low':
+        return 'bg-gray-500/10 text-gray-500 border-gray-500/20';
+      default:
+        return 'bg-muted text-muted-foreground';
     }
+  };
+
+  const formatStatus = (status: string) => {
+    return status.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
   return (
@@ -180,9 +448,13 @@ export default function AdminTickets() {
                         <TableCell>
                           <div>
                             <p className="font-medium">{ticket.client?.full_name || 'N/A'}</p>
-                            <p className="text-xs text-muted-foreground">{ticket.client?.email}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {ticket.client?.email || 'N/A'}
+                            </p>
                             {ticket.client?.client_code && (
-                              <p className="text-xs font-mono text-primary">{ticket.client.client_code}</p>
+                              <p className="text-xs font-mono text-primary">
+                                {ticket.client.client_code}
+                              </p>
                             )}
                           </div>
                         </TableCell>
@@ -198,9 +470,9 @@ export default function AdminTickets() {
                             value={ticket.status}
                             onValueChange={(value) => updateTicketStatus(ticket.id, value)}
                           >
-                            <SelectTrigger className="w-28 h-8">
+                            <SelectTrigger className="w-32 h-8 border-0 p-0">
                               <Badge variant="outline" className={getStatusColor(ticket.status)}>
-                                {ticket.status.replace('_', ' ')}
+                                {formatStatus(ticket.status)}
                               </Badge>
                             </SelectTrigger>
                             <SelectContent>
@@ -211,11 +483,49 @@ export default function AdminTickets() {
                             </SelectContent>
                           </Select>
                         </TableCell>
-                        <TableCell>{new Date(ticket.created_at).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          {new Date(ticket.created_at).toLocaleDateString('en-US', {
+                            month: 'numeric',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })}
+                        </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="sm">
-                            <Eye className="w-4 h-4" />
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreVertical className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleViewTicket(ticket)}>
+                                <Eye className="w-4 h-4 mr-2" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleReplyTicket(ticket)}>
+                                <MessageSquare className="w-4 h-4 mr-2" />
+                                Reply
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleAssignTicket(ticket)}>
+                                <UserPlus className="w-4 h-4 mr-2" />
+                                Assign
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEmailClient(ticket)}>
+                                <Mail className="w-4 h-4 mr-2" />
+                                Email Client
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteTicket(ticket)}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -226,6 +536,162 @@ export default function AdminTickets() {
           </CardContent>
         </Card>
       </main>
+
+      {/* Ticket Detail Dialog */}
+      <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{selectedTicket?.title}</DialogTitle>
+            <DialogDescription>Ticket Details</DialogDescription>
+          </DialogHeader>
+          {selectedTicket && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Client</p>
+                  <p className="font-medium">{selectedTicket.client?.full_name || 'N/A'}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedTicket.client?.email || 'N/A'}
+                  </p>
+                  {selectedTicket.client?.client_code && (
+                    <p className="text-xs font-mono text-primary">
+                      {selectedTicket.client.client_code}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Status</p>
+                  <Badge variant="outline" className={getStatusColor(selectedTicket.status)}>
+                    {formatStatus(selectedTicket.status)}
+                  </Badge>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Priority</p>
+                  <Badge variant="outline" className={getPriorityColor(selectedTicket.priority)}>
+                    {selectedTicket.priority}
+                  </Badge>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Category</p>
+                  <p>{selectedTicket.category || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Created</p>
+                  <p>
+                    {new Date(selectedTicket.created_at).toLocaleDateString('en-US', {
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Last Updated</p>
+                  <p>
+                    {new Date(selectedTicket.updated_at).toLocaleDateString('en-US', {
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                  </p>
+                </div>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-2">Description</p>
+                <div className="p-4 bg-muted rounded-md">
+                  <p className="whitespace-pre-wrap">{selectedTicket.description}</p>
+                </div>
+              </div>
+
+              {/* Messages Section */}
+              {selectedTicket.messages && selectedTicket.messages.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">Messages</p>
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {selectedTicket.messages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className={`p-3 rounded-md ${
+                          msg.is_internal ? 'bg-blue-500/10 border border-blue-500/20' : 'bg-muted'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-muted-foreground">
+                            {msg.is_internal ? 'Internal Note' : 'Public Reply'}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(msg.created_at).toLocaleString()}
+                          </span>
+                        </div>
+                        <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsDetailOpen(false);
+                    handleReplyTicket(selectedTicket);
+                  }}
+                >
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Reply
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Reply Dialog */}
+      <Dialog open={isReplyOpen} onOpenChange={setIsReplyOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Reply to Ticket</DialogTitle>
+            <DialogDescription>
+              {selectedTicket?.title} - {selectedTicket?.client?.email}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedTicket && (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="reply-message">Message</Label>
+                <Textarea
+                  id="reply-message"
+                  placeholder="Enter your reply..."
+                  value={replyMessage}
+                  onChange={(e) => setReplyMessage(e.target.value)}
+                  rows={6}
+                  className="mt-2"
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="internal-note"
+                  checked={isInternal}
+                  onCheckedChange={(checked) => setIsInternal(checked === true)}
+                />
+                <Label htmlFor="internal-note" className="text-sm font-normal cursor-pointer">
+                  Internal note (not visible to client)
+                </Label>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIsReplyOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={submitReply} disabled={isSubmittingReply || !replyMessage.trim()}>
+                  <Send className="w-4 h-4 mr-2" />
+                  {isSubmittingReply ? 'Sending...' : 'Send Reply'}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
